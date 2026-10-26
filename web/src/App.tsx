@@ -1,19 +1,28 @@
 import { useCallback, useState } from "react";
 import { api } from "./api";
+import { Icon } from "./Icons";
+import { Sidebar, type Page } from "./Sidebar";
 import { usePoll } from "./usePoll";
-import { ChatPanel } from "./views/ChatPanel";
-import { InboxPanel } from "./views/InboxPanel";
 import { ApprovalsView } from "./views/ApprovalsView";
 import { AuditView } from "./views/AuditView";
+import { ChatPanel } from "./views/ChatPanel";
+import { Home } from "./views/Home";
+import { InboxPanel } from "./views/InboxPanel";
 import { PoliciesView } from "./views/PoliciesView";
 import { SpendView } from "./views/SpendView";
 
-type Tab = "approvals" | "audit" | "policies" | "spend";
-type AgentTab = "inbox" | "chat";
+const TITLES: Record<Page, string> = {
+  home: "Maria's Clay & Linen",
+  inbox: "Customer inbox",
+  chat: "Chat with agent",
+  audit: "Audit log",
+  approvals: "Approvals",
+  spend: "Spend & limits",
+  policies: "Policies",
+};
 
 export function App() {
-  const [tab, setTab] = useState<Tab>("audit");
-  const [agentTab, setAgentTab] = useState<AgentTab>("inbox");
+  const [page, setPage] = useState<Page>("home");
   const status = usePoll(api.status, 30000);
   const settings = usePoll(api.settings, 5000);
   const inbox = usePoll(api.inbox);
@@ -23,15 +32,17 @@ export function App() {
   const spend = usePoll(api.spend);
 
   const refreshAll = useCallback(() => {
+    status.refresh();
     settings.refresh();
     inbox.refresh();
     approvals.refresh();
     audit.refresh();
     policies.refresh();
     spend.refresh();
-  }, [settings.refresh, inbox.refresh, approvals.refresh, audit.refresh, policies.refresh, spend.refresh]);
+  }, [status.refresh, settings.refresh, inbox.refresh, approvals.refresh, audit.refresh, policies.refresh, spend.refresh]);
 
   const guardrails = settings.data?.guardrails ?? true;
+  const pending = approvals.data?.filter((a) => a.status === "pending").length ?? 0;
 
   async function toggleGuardrails() {
     await api.setGuardrails(!guardrails);
@@ -44,94 +55,94 @@ export function App() {
     refreshAll();
   }
 
-  const pending = approvals.data?.filter((a) => a.status === "pending").length ?? 0;
-  const tabs: { id: Tab; label: string; count?: number }[] = [
-    { id: "audit", label: "Audit log" },
-    { id: "approvals", label: "Approvals", count: pending },
-    { id: "policies", label: "Policies" },
-    { id: "spend", label: "Spend" },
-  ];
+  function createPolicy() {
+    setPage("policies");
+    requestAnimationFrame(() => document.getElementById("policy-text")?.focus());
+  }
 
   return (
-    <div className={`app ${guardrails ? "" : "app-unguarded"}`}>
-      <header className="topbar">
-        <div className="brand">
-          <span className="logo" aria-hidden>◆</span>
-          <span>Agent Allowance</span>
-        </div>
-        <div className="topbar-meta">
-          {status.data && (
-            <>
+    <div className={`shell ${guardrails ? "" : "shell-unguarded"}`}>
+      <Sidebar page={page} onNavigate={setPage} onCreate={createPolicy} pending={pending} />
+
+      <div className="main">
+        <header className="header">
+          <h1 className="header-title">{TITLES[page]}</h1>
+          <div className="header-actions">
+            {status.data && (
               <span className={`pill ${status.data.paypalMode === "mock" ? "pill-warn" : "pill-ok"}`}>
                 PayPal {status.data.paypalMode}
                 {status.data.paypalMode === "sandbox" && !status.data.sandboxSeeded && " · not seeded"}
               </span>
-              <span className="pill">{status.data.model}</span>
-            </>
-          )}
-          {status.error && <span className="pill pill-bad">API offline</span>}
-          <button
-            className={`switch ${guardrails ? "switch-on" : "switch-off"}`}
-            role="switch"
-            aria-checked={guardrails}
-            onClick={toggleGuardrails}
-          >
-            <span className="switch-knob" />
-            Guardrails {guardrails ? "on" : "off"}
-          </button>
-          <button className="btn btn-ghost btn-sm" onClick={resetDemo}>Reset demo</button>
-        </div>
-      </header>
-
-      {!guardrails && (
-        <div className="banner">Guardrails are off. The agent can move money with no limits or approvals.</div>
-      )}
-
-      <main className="layout">
-        <section className="card agent">
-          <nav className="tabs" role="tablist">
-            {(["inbox", "chat"] as const).map((t) => (
-              <button
-                key={t}
-                role="tab"
-                aria-selected={agentTab === t}
-                className={`tab ${agentTab === t ? "tab-active" : ""}`}
-                onClick={() => setAgentTab(t)}
-              >
-                {t === "inbox" ? "Customer inbox" : "Chat with agent"}
-              </button>
-            ))}
-          </nav>
-          {agentTab === "inbox" ? (
-            <InboxPanel emails={inbox.data ?? []} onActivity={refreshAll} />
-          ) : (
-            <ChatPanel onActivity={refreshAll} />
-          )}
-        </section>
-
-        <section className="card console">
-          <nav className="tabs" role="tablist">
-            {tabs.map((t) => (
-              <button
-                key={t.id}
-                role="tab"
-                aria-selected={tab === t.id}
-                className={`tab ${tab === t.id ? "tab-active" : ""}`}
-                onClick={() => setTab(t.id)}
-              >
-                {t.label}
-                {!!t.count && <span className="count">{t.count}</span>}
-              </button>
-            ))}
-          </nav>
-          <div className="console-body">
-            {tab === "approvals" && <ApprovalsView rows={approvals.data ?? []} onChange={refreshAll} />}
-            {tab === "audit" && <AuditView rows={audit.data ?? []} />}
-            {tab === "policies" && <PoliciesView rows={policies.data ?? []} onChange={refreshAll} />}
-            {tab === "spend" && <SpendView spend={spend.data} />}
+            )}
+            {status.error && <span className="pill pill-bad">API offline</span>}
+            <button
+              className={`switch ${guardrails ? "switch-on" : "switch-off"}`}
+              role="switch"
+              aria-checked={guardrails}
+              onClick={toggleGuardrails}
+            >
+              <span className="switch-knob" />
+              Guardrails {guardrails ? "on" : "off"}
+            </button>
+            <button className="bell" onClick={() => setPage("approvals")} aria-label={`${pending} approvals waiting`}>
+              <Icon.Bell size={22} />
+              <span className="bell-count">{pending}</span>
+            </button>
+            <span className="divider" aria-hidden />
+            <span className="avatar" title="Maria (shop owner)">MC</span>
           </div>
-        </section>
-      </main>
+        </header>
+
+        {!guardrails && (
+          <div className="banner">Guardrails are off. The agent can move money with no limits or approvals.</div>
+        )}
+
+        <main className="content">
+          {page === "home" && (
+            <Home
+              status={status.data}
+              guardrails={guardrails}
+              approvals={approvals.data ?? []}
+              audit={audit.data ?? []}
+              spend={spend.data}
+              inbox={inbox.data ?? []}
+              onNavigate={setPage}
+              onToggleGuardrails={toggleGuardrails}
+              onReset={resetDemo}
+              onChange={refreshAll}
+            />
+          )}
+
+          {page === "inbox" && (
+            <div className="split">
+              <section className="panel">
+                <InboxPanel emails={inbox.data ?? []} onActivity={refreshAll} />
+              </section>
+              <section className="panel panel-pad">
+                <h3 className="section-title">Live activity</h3>
+                <AuditView rows={audit.data ?? []} />
+              </section>
+            </div>
+          )}
+
+          {page === "chat" && (
+            <div className="split">
+              <section className="panel">
+                <ChatPanel onActivity={refreshAll} />
+              </section>
+              <section className="panel panel-pad">
+                <h3 className="section-title">Live activity</h3>
+                <AuditView rows={audit.data ?? []} />
+              </section>
+            </div>
+          )}
+
+          {page === "audit" && <section className="panel panel-pad panel-tall"><AuditView rows={audit.data ?? []} /></section>}
+          {page === "approvals" && <section className="panel panel-pad panel-tall"><ApprovalsView rows={approvals.data ?? []} onChange={refreshAll} /></section>}
+          {page === "spend" && <section className="panel panel-pad panel-tall"><SpendView spend={spend.data} /></section>}
+          {page === "policies" && <section className="panel panel-pad panel-tall"><PoliciesView rows={policies.data ?? []} onChange={refreshAll} /></section>}
+        </main>
+      </div>
     </div>
   );
 }
