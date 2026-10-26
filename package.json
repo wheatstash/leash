@@ -1,0 +1,24 @@
+{
+  "name": "agent-allowance",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A policy firewall between AI agents and PayPal: every money-moving tool call is allowed, blocked, or held for human approval.",
+  "license": "MIT",
+  "workspaces": [
+    "server",
+    "web"
+  ],
+  "scripts": {
+    "dev": "concurrently -n server,web -c blue,green \"npm run dev -w server\" \"npm run dev -w web\"",
+    "build": "npm run build -w web && npm run build -w server",
+    "start": "npm run start -w server",
+    "typecheck": "npm run typecheck -w server && npm run typecheck -w web",
+    "seed": "npm run seed -w server --"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
