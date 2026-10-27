@@ -5,3 +5,7 @@ dist/
 .DS_Store
 *.tsbuildinfo
 server/data/
+
+# Source art (optimized copies live in web/public/models)
+/paypalbot.glb
+/PayPal-Monogram-FullColor-RGB.png

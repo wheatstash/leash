@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from "react";
-import { money, time, type Approval, type AuditEntry, type Email, type Spend, type Status } from "../api";
+import { money, time, type Approval, type AuditEntry, type AuditStatus, type Email, type Spend, type Status } from "../api";
+import { Bot2D, type BotEvent, type Reaction } from "../Bot2D";
 import { Icon } from "../Icons";
 import type { Page } from "../Sidebar";
 import { StatusBadge } from "../StatusBadge";
@@ -19,6 +20,24 @@ interface Props {
 }
 
 const MOVED: AuditEntry["status"][] = ["executed", "approved"];
+
+const REACTIONS: Record<AuditStatus, Reaction> = {
+  executed: "yes",
+  approved: "yes",
+  blocked: "no",
+  failed: "no",
+  rejected: "no",
+  pending_approval: "hold",
+};
+
+const CAPTIONS: Record<AuditStatus, string> = {
+  executed: "Done",
+  approved: "Approved and sent",
+  blocked: "Blocked by policy",
+  failed: "PayPal said no",
+  rejected: "You rejected that one",
+  pending_approval: "Waiting on your sign-off",
+};
 
 export function humanize(tool: string): string {
   const s = tool.replace(/_/g, " ");
@@ -45,20 +64,26 @@ export function Home(props: Props) {
   const blocked = today.filter((e) => e.status === "blocked");
   const stopped = blocked.reduce((s, e) => s + (e.amount ?? 0), 0);
   const unread = inbox.filter((e) => e.status === "unread").length;
+  const latest = audit[0];
+  const botEvent: BotEvent | undefined = latest && { id: latest.id, reaction: REACTIONS[latest.status] };
+  const caption = latest ? `${CAPTIONS[latest.status]}: ${humanize(latest.tool).toLowerCase()}` : "Hi! I check every PayPal call.";
 
   return (
     <div className="home">
       <section className="hero">
-        <p className="hero-amount">
-          {allowance === null ? "—" : money(allowance)}
-          <span className="hero-currency">USD</span>
-        </p>
-        <p className="muted hero-label">
-          {cap ? `Refund allowance left today · ${money(cap.limit)} daily cap` : "No daily cap set"}
-        </p>
-        <button className="btn-pill" onClick={() => onNavigate("policies")}>
-          Manage limits <Icon.ChevronDown size={16} />
-        </button>
+        <div className="hero-text">
+          <p className="hero-amount">
+            {allowance === null ? "—" : money(allowance)}
+            <span className="hero-currency">USD</span>
+          </p>
+          <p className="muted hero-label">
+            {cap ? `Refund allowance left today · ${money(cap.limit)} daily cap` : "No daily cap set"}
+          </p>
+          <button className="btn-pill" onClick={() => onNavigate("policies")}>
+            Manage limits <Icon.ChevronDown size={16} />
+          </button>
+        </div>
+        <Bot2D event={botEvent} caption={caption} />
       </section>
 
       <section className="task-cards">
