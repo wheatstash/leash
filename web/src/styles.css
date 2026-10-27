@@ -542,3 +542,31 @@ input:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 
 @keyframes xray-in { from { opacity: 0; transform: translateY(-3px); } }
 @media (max-width: 900px) { .xray-legend { margin: 0 16px 8px; } }
 @media (prefers-reduced-motion: reduce) { .xray [data-xray]::after { animation: none; } }
+
+/* ---------- Demo guide ---------- */
+.tour { position: fixed; inset: 0; z-index: 60; pointer-events: none; }
+.tour-scrim { position: absolute; inset: 0; background: rgb(11 13 18 / 0.5); }
+.tour-spot {
+  position: fixed; border-radius: 14px; outline: 2px solid #ffffff; outline-offset: 0;
+  box-shadow: 0 0 0 9999px rgb(11 13 18 / 0.5), 0 0 0 6px rgb(0 98 214 / 0.35);
+  transition: top 300ms var(--ease), left 300ms var(--ease), width 300ms var(--ease), height 300ms var(--ease);
+}
+.tour-card {
+  position: fixed; pointer-events: auto; background: white; border-radius: 16px; padding: 16px 18px 14px;
+  box-shadow: 0 20px 50px rgb(11 13 18 / 0.28); display: grid; gap: 8px;
+  transition: top 300ms var(--ease), left 300ms var(--ease); animation: tour-in 220ms var(--ease);
+}
+@keyframes tour-in { from { opacity: 0; transform: translateY(6px); } }
+.tour-top { display: flex; align-items: center; justify-content: space-between; margin: -4px -6px -4px 0; }
+.tour-title { font-size: 18px; font-weight: 800; letter-spacing: -0.02em; }
+.tour-body { font-size: 14px; line-height: 1.55; color: var(--text); }
+.tour-list { margin: 6px 0 6px 18px; padding: 0; display: grid; gap: 2px; }
+.tour-tip { font-size: 12.5px; color: var(--muted); }
+.tour-action { justify-self: start; }
+.tour-nav { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 4px; }
+.tour-dots { display: flex; gap: 4px; flex-wrap: wrap; }
+.tour-dots span { width: 6px; height: 6px; border-radius: 50%; background: var(--border); }
+.tour-dots span.done { background: #9cc2ee; }
+.tour-dots span.on { background: var(--accent); width: 16px; border-radius: 3px; }
+.tour-buttons { display: flex; gap: 6px; }
+@media (prefers-reduced-motion: reduce) { .tour-spot, .tour-card { transition: none; animation: none; } }

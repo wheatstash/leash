@@ -8,6 +8,8 @@
 
 ## For judges
 
+- **What Leash is, the problem it solves, and every tool and API it uses:** [docs/ABOUT.md](docs/ABOUT.md).
+- **On-screen guide:** the console opens with a 13-step guided tour on your first visit. You can also reopen it from **Guide** in the header, or link to a step with `/?tour=N`. It walks the whole demo, switches pages for you, and can perform each step's action.
 - **Hosted demo:** _coming soon (Render URL)_. Nothing to install; the PayPal sandbox and Claude are already configured.
 - **Run it yourself:** follow [Run it locally](#run-it-locally). You need your own free [PayPal sandbox app](https://developer.paypal.com/dashboard/applications/sandbox) and an [Anthropic API key](https://console.anthropic.com). Without PayPal credentials the app still runs in mock mode.
 - **Demo script:** see [Try the demo flow](#try-the-demo-flow). Use **Reset demo** to start over.
@@ -128,6 +130,7 @@ web/src/
   Mascot.tsx        Animated SVG robot dog: wags, blinks, offers a paw, reacts to firewall decisions
   StatusBar.tsx     Live stack facts from /api/stack
   xray.ts           X-ray mode labels (which tech powers each part of the UI)
+  Tour.tsx          On-screen demo guide (spotlight tour)
   views/            Home, Inbox, Chat, Approvals, Audit, Policies, Spend
 ```
 

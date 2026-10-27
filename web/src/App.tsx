@@ -3,6 +3,7 @@ import { api } from "./api";
 import { Icon } from "./Icons";
 import { Sidebar, type Page } from "./Sidebar";
 import { StatusBar } from "./StatusBar";
+import { Tour, type TourContext } from "./Tour";
 import { TraceContext } from "./traceContext";
 import { usePoll } from "./usePoll";
 import { TECH_NAMES, xray, type Tech } from "./xray";
@@ -38,6 +39,34 @@ export function App() {
       return false;
     }
   });
+
+  // The guide opens on a first visit, with ?tour=1, or from the header.
+  const [tourOpen, setTourOpen] = useState(() => {
+    if (new URLSearchParams(window.location.search).has("tour")) return true;
+    try {
+      return localStorage.getItem("leash-tour-seen") !== "1";
+    } catch {
+      return false;
+    }
+  });
+  const closeTour = useCallback(() => {
+    setTourOpen(false);
+    try {
+      localStorage.setItem("leash-tour-seen", "1");
+    } catch {
+      // storage unavailable; the guide may show again next visit
+    }
+  }, []);
+  const tourCtx: TourContext = {
+    navigate: setPage,
+    setXray: setXrayOn,
+    openLatestTrace: () => {
+      const latest = audit.data?.[0];
+      if (latest) setTraceId(latest.id);
+      return !!latest;
+    },
+    closeTrace,
+  };
 
   // X toggles X-ray anywhere except while typing.
   useEffect(() => {
@@ -108,6 +137,9 @@ export function App() {
                 </span>
               )}
               {status.error && <span className="pill pill-bad">API offline</span>}
+              <button className="xray-toggle" onClick={() => setTourOpen(true)} title="Walk through the demo on screen">
+                <Icon.Sparkle size={16} /> Guide
+              </button>
               <button
                 className={`xray-toggle ${xrayOn ? "xray-toggle-on" : ""}`}
                 aria-pressed={xrayOn}
@@ -171,7 +203,7 @@ export function App() {
                 <section className="panel" {...xray("claude", "Claude agent loop · tool use over 47 PayPal Agent Toolkit tools, every call through Leash")}>
                   <InboxPanel emails={inbox.data ?? []} onActivity={refreshAll} />
                 </section>
-                <section className="panel panel-pad">
+                <section className="panel panel-pad" data-tour="live-activity">
                   <h3 className="section-title">Live activity</h3>
                   <AuditView rows={audit.data ?? []} />
                 </section>
@@ -183,7 +215,7 @@ export function App() {
                 <section className="panel" {...xray("claude", "Claude agent loop · tool use over 47 PayPal Agent Toolkit tools, every call through Leash")}>
                   <ChatPanel onActivity={refreshAll} />
                 </section>
-                <section className="panel panel-pad">
+                <section className="panel panel-pad" data-tour="live-activity">
                   <h3 className="section-title">Live activity</h3>
                   <AuditView rows={audit.data ?? []} />
                 </section>
@@ -198,6 +230,7 @@ export function App() {
           <StatusBar />
         </div>
         <TraceDrawer entry={audit.data?.find((e) => e.id === traceId) ?? null} onClose={closeTrace} />
+        <Tour open={tourOpen} onClose={closeTour} ctx={tourCtx} />
       </div>
     </TraceContext.Provider>
   );

@@ -1,0 +1,120 @@
+<!doctype html>
+<!-- Devpost thumbnail (3:2). Render: Chrome headless --window-size=1500,1000 --screenshot=thumbnail.png thumbnail.html -->
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Leash thumbnail</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800;900&display=swap" />
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  html, body { width: 1500px; height: 1000px; overflow: hidden; }
+  body {
+    font-family: Inter, system-ui, sans-serif; color: #0b0d12;
+    background:
+      radial-gradient(900px 700px at 80% 55%, #d6e7fb 0%, rgb(214 231 251 / 0) 70%),
+      radial-gradient(1px 1px at 1px 1px, rgb(0 48 135 / 0.13) 1px, transparent 0) 0 0 / 28px 28px,
+      linear-gradient(160deg, #f7faff 0%, #e8f1fc 100%);
+    position: relative;
+  }
+  .left { position: absolute; left: 96px; top: 205px; width: 760px; }
+  .brand { display: flex; align-items: center; gap: 28px; }
+  .word { font-size: 236px; font-weight: 900; letter-spacing: -0.055em; line-height: 0.9; }
+  .tagline { margin-top: 34px; font-size: 54px; font-weight: 700; letter-spacing: -0.025em; line-height: 1.15; }
+  .sub { margin-top: 22px; font-size: 32px; font-weight: 500; color: #4a5160; line-height: 1.35; }
+  .chips { margin-top: 52px; display: flex; gap: 16px; }
+  .chip { font-size: 30px; font-weight: 700; padding: 14px 26px; border-radius: 999px; display: inline-flex; align-items: center; gap: 12px; }
+  .chip i { font-style: normal; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; color: white; font-size: 20px; }
+  .ok { background: #e3f6ec; color: #047857; } .ok i { background: #059669; }
+  .held { background: #fff3dc; color: #a35a00; } .held i { background: #d97706; }
+  .bad { background: #fde7e4; color: #c4291c; } .bad i { background: #dc2626; }
+  .dog { position: absolute; right: 40px; top: 175px; width: 640px; height: 780px; }
+  .bubble {
+    position: absolute; right: 120px; top: 120px; padding: 18px 28px; border-radius: 999px; background: white;
+    font-size: 28px; font-weight: 700; box-shadow: 0 14px 40px rgb(11 13 18 / 0.14); border: 2px solid #e4e8ef; white-space: nowrap;
+  }
+  .bubble b { color: #c4291c; }
+</style>
+</head>
+<body>
+  <div class="left">
+    <div class="brand"><span class="word">Leash</span></div>
+    <p class="tagline">Keep your AI agent on a leash.</p>
+    <p class="sub">A policy firewall for every PayPal Agent Toolkit call, with rules written in plain English.</p>
+    <div class="chips">
+      <span class="chip ok"><i>✓</i>Allowed</span>
+      <span class="chip held"><i>❚❚</i>Held</span>
+      <span class="chip bad"><i>✕</i>Blocked</span>
+    </div>
+  </div>
+
+  <p class="bubble"><b>Blocked:</b> refund $2,000</p>
+
+  <!-- Same artwork as web/src/Mascot.tsx, with a leash running off to the left. -->
+  <svg class="dog" viewBox="-70 0 290 260" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="shell" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a4a7a"/><stop offset="1" stop-color="#13233b"/></linearGradient>
+      <linearGradient id="visor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#14243b"/><stop offset="1" stop-color="#070d18"/></linearGradient>
+      <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    </defs>
+
+    <ellipse cx="110" cy="240" rx="70" ry="8" fill="rgb(11 13 18 / 0.13)"/>
+
+    <!-- leash: from the collar ring, looping off toward the wordmark -->
+    <path d="M106 130 C 70 150, 20 120, -10 170 S -40 232, -52 236" fill="none" stroke="#0062d6" stroke-width="6" stroke-linecap="round"/>
+    <ellipse cx="-56" cy="226" rx="9" ry="12" transform="rotate(-20 -56 226)" fill="none" stroke="#0062d6" stroke-width="6"/>
+
+    <!-- tail -->
+    <g transform="rotate(10 148 204)">
+      <path d="M148 204 C 176 200, 186 176, 178 154" fill="none" stroke="url(#shell)" stroke-width="11" stroke-linecap="round"/>
+      <circle cx="178" cy="152" r="7" fill="#c9d3e0"/>
+    </g>
+
+    <!-- haunches, feet, torso -->
+    <ellipse cx="76" cy="206" rx="27" ry="23" fill="url(#shell)"/>
+    <ellipse cx="144" cy="206" rx="27" ry="23" fill="url(#shell)"/>
+    <ellipse cx="64" cy="228" rx="17" ry="8" fill="#c9d3e0"/>
+    <ellipse cx="156" cy="228" rx="17" ry="8" fill="#c9d3e0"/>
+    <ellipse cx="110" cy="176" rx="40" ry="50" fill="url(#shell)"/>
+    <ellipse cx="110" cy="184" rx="21" ry="30" fill="#3b5f93" opacity="0.45"/>
+
+    <!-- front legs -->
+    <rect x="114" y="168" width="16" height="58" rx="8" fill="url(#shell)" stroke="#5b7fb3" stroke-width="1.5"/>
+    <ellipse cx="122" cy="229" rx="12" ry="7" fill="#c9d3e0"/>
+    <rect x="90" y="168" width="16" height="58" rx="8" fill="url(#shell)" stroke="#5b7fb3" stroke-width="1.5"/>
+    <ellipse cx="98" cy="229" rx="12" ry="7" fill="#c9d3e0"/>
+
+    <!-- collar + PayPal medallion -->
+    <rect x="78" y="116" width="64" height="13" rx="6.5" fill="#003087" stroke="#0070e0" stroke-width="1.5"/>
+    <circle cx="110" cy="132" r="3.5" fill="none" stroke="#c9d3e0" stroke-width="2"/>
+    <circle cx="110" cy="149" r="14" fill="#ffffff" stroke="#c9d3e0" stroke-width="2.5"/>
+    <image href="paypal-monogram.png" x="102" y="139" width="16" height="19.3"/>
+
+    <!-- head, tilted a touch -->
+    <g transform="rotate(-3 110 114)">
+      <line x1="110" y1="24" x2="110" y2="13" stroke="#c9d3e0" stroke-width="3" stroke-linecap="round"/>
+      <circle cx="110" cy="10" r="4.5" fill="#ff6b6b" filter="url(#glow)"/>
+      <g transform="rotate(40 52 34.6)">
+        <rect x="40" y="30" width="24" height="58" rx="12" fill="url(#shell)" stroke="#c9d3e0" stroke-width="2"/>
+        <rect x="47" y="42" width="10" height="36" rx="5" fill="#c9d3e0" opacity="0.5"/>
+      </g>
+      <g transform="rotate(-40 168 34.6)">
+        <rect x="156" y="30" width="24" height="58" rx="12" fill="url(#shell)" stroke="#c9d3e0" stroke-width="2"/>
+        <rect x="163" y="42" width="10" height="36" rx="5" fill="#c9d3e0" opacity="0.5"/>
+      </g>
+      <rect x="58" y="24" width="104" height="90" rx="40" fill="url(#shell)" stroke="#c9d3e0" stroke-width="2.5"/>
+      <rect x="70" y="36" width="80" height="42" rx="18" fill="url(#visor)"/>
+      <path d="M80 45 Q 94 39 112 41" stroke="#ffffff" stroke-opacity="0.18" stroke-width="4" stroke-linecap="round" fill="none"/>
+      <g filter="url(#glow)">
+        <path d="M88 50 L100 57 L88 64" fill="none" stroke="#ff8080" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M132 50 L120 57 L132 64" fill="none" stroke="#ff8080" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </g>
+      <rect x="85" y="76" width="50" height="32" rx="16" fill="#3b5f93"/>
+      <ellipse cx="110" cy="83" rx="8.5" ry="5.5" fill="#0b1628"/>
+      <path d="M110 88 L110 94 M101 98 Q 110 93 119 98" stroke="#0b1628" stroke-width="2" stroke-linecap="round" fill="none"/>
+      <circle cx="72" cy="96" r="3" fill="#c9d3e0"/>
+      <circle cx="148" cy="96" r="3" fill="#c9d3e0"/>
+    </g>
+  </svg>
+</body>
+</html>

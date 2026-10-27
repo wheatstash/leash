@@ -36,7 +36,7 @@ export function InboxPanel({ emails, onActivity }: { emails: Email[]; onActivity
     <div className="inbox">
       <div className="inbox-toolbar">
         <p className="muted">{unread} unread from customers</p>
-        <button className="btn btn-primary" onClick={handleAll} disabled={running || unread === 0}>
+        <button className="btn btn-primary" data-tour="handle-inbox" onClick={handleAll} disabled={running || unread === 0}>
           {running ? "Agent working…" : "Let the agent handle the inbox"}
         </button>
       </div>
