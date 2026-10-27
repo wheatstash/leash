@@ -9,6 +9,7 @@ export interface TourContext {
   setXray: (on: boolean) => void;
   openLatestTrace: () => boolean;
   closeTrace: () => void;
+  openStock: () => void;
 }
 
 interface Step {
@@ -77,6 +78,20 @@ const STEPS: Step[] = [
     action: { label: "Turn on X-ray", run: (ctx) => ctx.setXray(true) },
   },
   {
+    page: "home",
+    target: "[data-tour='stock-shop']",
+    title: "First, stock the shop",
+    body: (
+      <>
+        The agent's refunds are real PayPal sandbox refunds, so each one needs a real payment behind it, and a payment can only be
+        refunded once. The shop's shared payments may already be used up by other visitors. So <b>play the customer</b>: pay for this
+        week's four orders with PayPal Checkout. The agent then refunds <b>your</b> payment, and Leash decides how much it may.
+      </>
+    ),
+    tip: "Sandbox only, no real money. The checkout shows a test buyer login. The guide waits while you pay.",
+    action: { label: "Open the checkout", run: (ctx) => ctx.openStock() },
+  },
+  {
     page: "inbox",
     target: "[data-tour='handle-inbox']",
     title: "The customer inbox",
@@ -87,7 +102,7 @@ const STEPS: Step[] = [
         and every PayPal call it makes goes through Leash.
       </>
     ),
-    tip: "Takes about a minute: real Claude calls and real sandbox refunds. For fresh payments of your own, use Stock your shop with PayPal on Home first.",
+    tip: "Takes about a minute: real Claude calls and real sandbox refunds against the payment you just made.",
     action: { label: "Let the agent handle the inbox", run: () => clickTarget("[data-tour='handle-inbox']") },
   },
   {
@@ -153,7 +168,8 @@ const STEPS: Step[] = [
 
 const PAD = 8;
 
-export function Tour({ open, onClose, ctx }: { open: boolean; onClose: () => void; ctx: TourContext }) {
+/** `paused` hides the guide (keeping its place) while something else needs the screen, like checkout. */
+export function Tour({ open, paused, onClose, ctx }: { open: boolean; paused?: boolean; onClose: () => void; ctx: TourContext }) {
   const [i, setI] = useState(0);
   const [rect, setRect] = useState<DOMRect | null>(null);
   const card = useRef<HTMLDivElement>(null);
@@ -215,7 +231,7 @@ export function Tour({ open, onClose, ctx }: { open: boolean; onClose: () => voi
   );
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || paused) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
       else if (e.key === "ArrowRight") go(i + 1);
@@ -223,7 +239,7 @@ export function Tour({ open, onClose, ctx }: { open: boolean; onClose: () => voi
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open, i, go, onClose]);
+  }, [open, paused, i, go, onClose]);
 
   // Opening starts at step 1, or at ?tour=N (handy when recording one part of the demo).
   useEffect(() => {
@@ -232,7 +248,7 @@ export function Tour({ open, onClose, ctx }: { open: boolean; onClose: () => voi
     setI(n >= 1 && n <= STEPS.length ? n - 1 : 0);
   }, [open]);
 
-  if (!open) return null;
+  if (!open || paused) return null;
 
   // Place the card below the target if it fits, else above, else beside it, else centered.
   const vw = window.innerWidth;

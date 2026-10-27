@@ -77,6 +77,7 @@ export function App({ user, onSignOut }: { user: string; onSignOut: () => void }
       return !!latest;
     },
     closeTrace,
+    openStock,
   };
 
   // X toggles X-ray anywhere except while typing.
@@ -259,7 +260,7 @@ export function App({ user, onSignOut }: { user: string; onSignOut: () => void }
           <StatusBar />
         </div>
         <TraceDrawer entry={audit.data?.find((e) => e.id === traceId) ?? null} onClose={closeTrace} />
-        <Tour open={tourOpen} onClose={closeTour} ctx={tourCtx} />
+        <Tour open={tourOpen} paused={stockOpen} onClose={closeTour} ctx={tourCtx} />
         <StockShop
           open={stockOpen}
           onClose={closeStock}

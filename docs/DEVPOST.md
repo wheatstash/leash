@@ -48,7 +48,7 @@ Flip **Guardrails off** and the same agent sends Sam's $1,450 straight through. 
   A blocked call visibly stops at step 2.
 - **Live stack bar:** the PayPal sandbox token's time left, the Agent Toolkit version and tool count, Claude's last latency, the AG Grid version, and the deployed commit on Render.
 - **X-ray mode** (press **X**): labels every part of the console with the technology behind it.
-- **On-screen guide:** a 13-step tour that walks through the whole demo, switching pages and running key steps for you.
+- **On-screen guide:** a 14-step tour that walks through the whole demo, switching pages and running key steps for you.
 - **A guard dog:** the mascot, wearing a PayPal collar medallion, reacts to every decision. It wags when a call runs, tilts its head when one is held, and growls when one is blocked.
 
 ## How we built it

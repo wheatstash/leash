@@ -107,15 +107,16 @@ export function Home(props: Props) {
           tone={guardrails ? undefined : "bad"}
         />
         {status?.paypalMode === "mock" ? (
-          <TaskCard icon={<Icon.Bank />} title="Connect a PayPal sandbox" body="Running in mock mode. Add sandbox keys to server/.env." />
+          <TaskCard icon={<Icon.Bank />} title="Connect a PayPal sandbox" body="Running in mock mode. Add sandbox keys to server/.env." tour="stock-shop" />
         ) : status?.ownOrders ? (
-          <TaskCard icon={<Icon.Bank />} title="Your shop is stocked" body="The agent's refunds hit the PayPal sandbox payment you made." onClick={props.onStock} />
+          <TaskCard icon={<Icon.Bank />} title="Your shop is stocked" body="The agent's refunds hit the PayPal sandbox payment you made." onClick={props.onStock} tour="stock-shop" />
         ) : (
           <TaskCard
             icon={<Icon.Bank />}
             title="Stock your shop with PayPal"
             body="Play the customer: pay for this week's orders in the PayPal sandbox, then watch the agent refund your payment."
             onClick={props.onStock}
+            tour="stock-shop"
           />
         )}
       </section>
@@ -210,9 +211,9 @@ export function Home(props: Props) {
   );
 }
 
-function TaskCard({ icon, title, body, onClick, tone }: { icon: ReactNode; title: string; body: string; onClick?: () => void; tone?: "bad" }) {
+function TaskCard({ icon, title, body, onClick, tone, tour }: { icon: ReactNode; title: string; body: string; onClick?: () => void; tone?: "bad"; tour?: string }) {
   return (
-    <div className={`task-card ${tone ? `task-${tone}` : ""}`}>
+    <div className={`task-card ${tone ? `task-${tone}` : ""}`} data-tour={tour}>
       <span className="task-icon">{icon}</span>
       {onClick ? (
         <button className="link task-title" onClick={onClick}>{title}</button>
