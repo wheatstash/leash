@@ -687,3 +687,4 @@ button.avatar:focus-visible { outline: 2px solid var(--accent); outline-offset: 
 .inbox-stock { margin: 0 16px 8px; padding: 10px 12px; border-radius: 10px; background: #eef5fe; color: #1d3354; font-size: 13px; }
 .inbox-stock .link { font-size: 13px; font-weight: 600; }
 @media (prefers-reduced-motion: reduce) { .modal, .modal-scrim { animation: none; } }
+.tour-missing { color: var(--warn); font-weight: 600; }

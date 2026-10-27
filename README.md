@@ -10,7 +10,7 @@
 
 - **What Leash is, the problem it solves, and every tool and API it uses:** [docs/ABOUT.md](docs/ABOUT.md).
 - **Devpost write-up:** [docs/DEVPOST.md](docs/DEVPOST.md).
-- **On-screen guide:** the console opens with a 14-step guided tour on your first visit. You can also reopen it from **Guide** in the header, or link to a step with `/?tour=N`. It walks the whole demo, switches pages for you, and can perform each step's action.
+- **On-screen guide:** the console opens with a 14-step guided tour every time you sign in with the demo credentials (stock the shop, run the inbox, approve, trace, contrast, rules, then the tech). You can also reopen it from **Guide** in the header, or link to a step with `/?tour=N`. It walks the whole demo, switches pages for you, and can perform each step's action.
 - **Demo sign-in:** email `judge@example.com`, password `leash-demo-2026`. The sign-in screen also has a **Use demo credentials** button that fills them in.
 - **Hosted demo:** https://leash-y52a.onrender.com. Nothing to install; the PayPal sandbox and Claude are already configured.
 - **Run it yourself:** follow [Run it locally](#run-it-locally). You need your own free [PayPal sandbox app](https://developer.paypal.com/dashboard/applications/sandbox) and an [Anthropic API key](https://console.anthropic.com). Without PayPal credentials the app still runs in mock mode.

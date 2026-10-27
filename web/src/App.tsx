@@ -27,7 +27,7 @@ const TITLES: Record<Page, string> = {
   policies: "Policies",
 };
 
-export function App({ user, onSignOut }: { user: string; onSignOut: () => void }) {
+export function App({ user, onSignOut, freshSignIn = false }: { user: string; onSignOut: () => void; freshSignIn?: boolean }) {
   const [page, setPage] = useState<Page>("home");
   const [traceId, setTraceId] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -51,30 +51,19 @@ export function App({ user, onSignOut }: { user: string; onSignOut: () => void }
     }
   });
 
-  // The guide opens on a first visit, with ?tour=1, or from the header.
-  const [tourOpen, setTourOpen] = useState(() => {
-    if (new URLSearchParams(window.location.search).has("tour")) return true;
-    try {
-      return localStorage.getItem("leash-tour-seen") !== "1";
-    } catch {
-      return false;
-    }
-  });
-  const closeTour = useCallback(() => {
-    setTourOpen(false);
-    try {
-      localStorage.setItem("leash-tour-seen", "1");
-    } catch {
-      // storage unavailable; the guide may show again next visit
-    }
-  }, []);
+  // The guide opens on every fresh sign-in (not when a stored session is restored on reload),
+  // with ?tour=N, or from the header.
+  const [tourOpen, setTourOpen] = useState(() => freshSignIn || new URLSearchParams(window.location.search).has("tour"));
+  const closeTour = useCallback(() => setTourOpen(false), []);
   const tourCtx: TourContext = {
     navigate: setPage,
     setXray: setXrayOn,
+    // Prefer the newest call that actually reached PayPal (e.g. the refund just approved).
     openLatestTrace: () => {
-      const latest = audit.data?.[0];
-      if (latest) setTraceId(latest.id);
-      return !!latest;
+      const rows = audit.data ?? [];
+      const pick = rows.find((e) => e.trace?.paypal?.calls.some((c) => !c.url.includes("/oauth2/"))) ?? rows[0];
+      if (pick) setTraceId(pick.id);
+      return !!pick;
     },
     closeTrace,
     openStock,

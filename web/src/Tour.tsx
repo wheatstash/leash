@@ -18,6 +18,8 @@ interface Step {
   title: string;
   body: ReactNode;
   tip?: ReactNode;
+  /** Shown instead of the tip if the step's target never appears (e.g. no calls to trace yet). */
+  missing?: ReactNode;
   action?: { label: string; run: (ctx: TourContext) => void };
   onEnter?: (ctx: TourContext) => void;
   onLeave?: (ctx: TourContext) => void;
@@ -52,30 +54,15 @@ const STEPS: Step[] = [
   },
   {
     page: "home",
-    target: ".hero-amount",
-    title: "Today's refund allowance",
-    body: "The agent may refund up to $500 a day. This drops as refunds run, and once a refund would cross the cap, Leash blocks it.",
-  },
-  {
-    page: "home",
     target: ".pup",
     title: "Meet the guard dog",
     body: "It reacts to every firewall decision: it hops when a call runs, tilts its head when one is held for approval, and growls when one is blocked. Click it to play.",
   },
   {
     page: "home",
-    target: ".statusbar",
-    title: "The live stack",
-    body: "These are live facts, not logos: the PayPal sandbox token and the last API call, the Agent Toolkit version and tool count, Claude's last latency, the AG Grid version, and the deployed commit.",
-    tip: "Hover any segment for details.",
-  },
-  {
-    page: "home",
-    target: "[data-tour='xray']",
-    title: "X-ray mode",
-    body: "Labels every part of the console with the technology behind it, color-coded by PayPal, Claude, Leash, AG Grid and Render.",
-    tip: "Press X at any time to toggle it.",
-    action: { label: "Turn on X-ray", run: (ctx) => ctx.setXray(true) },
+    target: ".hero-amount",
+    title: "Today's refund allowance",
+    body: "The agent may refund up to $500 a day. This drops as refunds run, and once a refund would cross the cap, Leash blocks it.",
   },
   {
     page: "home",
@@ -112,6 +99,12 @@ const STEPS: Step[] = [
     body: "Each row is one tool call. Priya's $8 refund runs, Diego's $250 refund is held for approval, and Sam's $1,450 refund is blocked by the daily cap. If the injected email fools the model, its delete and $2,000 refund are blocked too.",
   },
   {
+    page: "approvals",
+    target: ".grid-wrap",
+    title: "Human in the loop",
+    body: "Held calls wait here. Approve Diego's $250 refund and Leash runs it once; reject it and nothing is sent. The bell in the header counts what's waiting.",
+  },
+  {
     page: "audit",
     target: ".grid-wrap",
     title: "The audit log",
@@ -133,19 +126,14 @@ const STEPS: Step[] = [
         A blocked call stops at step 2, and nothing reaches PayPal.
       </>
     ),
+    missing: "No calls to trace yet. Go back to step 5, let the agent handle the inbox, then return here.",
     onEnter: (ctx) => {
       ctx.openLatestTrace();
     },
     onLeave: (ctx) => ctx.closeTrace(),
   },
   {
-    page: "approvals",
-    target: ".grid-wrap",
-    title: "Human in the loop",
-    body: "Held calls wait here. Approve Diego's $250 refund and Leash runs it once; reject it and nothing is sent. The bell in the header counts what's waiting.",
-  },
-  {
-    page: "approvals",
+    page: "audit",
     target: "[data-tour='guardrails']",
     title: "The contrast",
     body: "Turn guardrails off and the same agent moves money with no limits: Sam's $1,450 refund goes straight through. That's the risk Leash exists to remove.",
@@ -160,10 +148,25 @@ const STEPS: Step[] = [
   },
   {
     page: "home",
+    target: ".statusbar",
+    title: "The live stack",
+    body: "These are live facts, not logos: the PayPal sandbox token and the last API call, the Agent Toolkit version and tool count, Claude's last latency, the AG Grid version, and the deployed commit.",
+    tip: "Hover any segment for details.",
+  },
+  {
+    page: "home",
+    target: "[data-tour='xray']",
+    title: "X-ray mode",
+    body: "Labels every part of the console with the technology behind it, color-coded by PayPal, Claude, Leash, AG Grid and Render.",
+    tip: "Press X at any time to toggle it.",
+    action: { label: "Turn on X-ray", run: (ctx) => ctx.setXray(true) },
+  },
+  {
+    page: "home",
     title: "That's Leash",
     body: "The agent does the work, and Leash holds the leash: rules in plain English, enforced on every PayPal call, with approvals and a trace for everything.",
     tip: "Reopen this guide any time from the Guide button. The full write-up is in docs/ABOUT.md.",
-  },
+  }
 ];
 
 const PAD = 8;
@@ -172,6 +175,7 @@ const PAD = 8;
 export function Tour({ open, paused, onClose, ctx }: { open: boolean; paused?: boolean; onClose: () => void; ctx: TourContext }) {
   const [i, setI] = useState(0);
   const [rect, setRect] = useState<DOMRect | null>(null);
+  const [targetMissing, setTargetMissing] = useState(false);
   const card = useRef<HTMLDivElement>(null);
   const [cardH, setCardH] = useState(0);
   const step = STEPS[i];
@@ -195,8 +199,10 @@ export function Tour({ open, paused, onClose, ctx }: { open: boolean; paused?: b
     if (!open) return;
     const sel = STEPS[i].target;
     setRect(null);
+    setTargetMissing(false);
     if (!sel) return;
     let scrolled = false;
+    const giveUp = window.setTimeout(() => !document.querySelector(sel) && setTargetMissing(true), 1500);
     const measure = () => {
       const el = document.querySelector(sel);
       if (!el) return setRect(null);
@@ -211,6 +217,7 @@ export function Tour({ open, paused, onClose, ctx }: { open: boolean; paused?: b
     window.addEventListener("resize", measure);
     window.addEventListener("scroll", measure, true);
     return () => {
+      window.clearTimeout(giveUp);
       window.clearInterval(id);
       window.removeEventListener("resize", measure);
       window.removeEventListener("scroll", measure, true);
@@ -290,7 +297,7 @@ export function Tour({ open, paused, onClose, ctx }: { open: boolean; paused?: b
         </div>
         <h3 className="tour-title">{step.title}</h3>
         <div className="tour-body">{step.body}</div>
-        {step.tip && <p className="tour-tip">{step.tip}</p>}
+        {targetMissing && step.missing ? <p className="tour-tip tour-missing">{step.missing}</p> : step.tip && <p className="tour-tip">{step.tip}</p>}
         {step.action && (
           <button className="btn-pill tour-action" onClick={() => step.action!.run(ctx)}>
             {step.action.label}
