@@ -195,29 +195,6 @@ Then:
 
 ---
 
-## Devpost summary (paste-ready)
+## Devpost submission text
 
-**Inspiration.** AI agents can now run a merchant's PayPal back office through the PayPal Agent Toolkit, but they hold the keys to the money with nothing in between. One prompt-injected customer email or one misread amount becomes a real refund. Card-level spend controls don't cover refunds, invoices or disputes, so we built a leash.
-
-**What it does.** Leash is a policy firewall between an AI agent and PayPal. The owner writes rules in plain English, and Claude turns each one into a typed policy. Every tool call the agent makes (all 47 PayPal Agent Toolkit tools) is checked first, then allowed, blocked, or held for one-click approval, and logged with a full trace down to the PayPal REST request.
-
-**How we built it.** A TypeScript/Express gateway wraps every PayPal Agent Toolkit tool. Claude Opus 5.5 runs the operations agent through a manual tool-use loop, with adaptive thinking, prompt caching and server-side fallback. It also translates rules with structured outputs. An AG Grid console shows the audit log, approvals, spend and policies. A trace inspector captures the toolkit's real PayPal HTTP traffic, with debug IDs, by hooking its HTTP client. The app is deployed on Render, behind a demo sign-in.
-
-**Challenges.**
-- Making the gateway the *only* path to PayPal.
-- Extracting amounts from very different tool schemas.
-- Seeding real sandbox payments for the agent to refund.
-- Showing judges the real PayPal traffic rather than a mock-up.
-
-**Accomplishments.**
-- A prompt-injected email can't move money even when the model is fooled.
-- Every decision is traceable to a PayPal debug ID.
-- Policies are written in plain English but enforced as typed rules.
-
-**What we learned.** The model's judgment is a good first line of defense, not a guarantee. Guarantees belong in a deterministic layer the model can't talk its way past.
-
-**What's next.**
-- Leash as an MCP server.
-- Persistent multi-tenant storage.
-- Approvals by Slack, email and SMS.
-- Per-customer limits and policy simulation.
+The paste-ready "About the project" text lives in [DEVPOST.md](DEVPOST.md).
