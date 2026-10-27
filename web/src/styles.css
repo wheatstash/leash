@@ -43,8 +43,8 @@ code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-
   display: flex; flex-direction: column; gap: 20px;
   position: sticky; top: 0; height: 100vh; overflow-y: auto;
 }
-.wordmark { display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 19px; font-weight: 800; letter-spacing: -0.03em; }
-.wordmark-mark { color: var(--accent); }
+.wordmark { display: flex; align-items: center; justify-content: center; gap: 8px; }
+.wordmark-text { font-size: 23px; font-weight: 800; letter-spacing: -0.045em; line-height: 1; }
 .btn-create {
   align-self: center;
   display: inline-flex; align-items: center; gap: 6px;

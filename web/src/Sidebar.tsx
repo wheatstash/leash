@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { Icon } from "./Icons";
+import { Wordmark } from "./Logo";
 
 export type Page = "home" | "inbox" | "chat" | "audit" | "approvals" | "spend" | "policies";
 
@@ -34,10 +35,7 @@ export function Sidebar({ page, onNavigate, onCreate, pending }: Props) {
 
   return (
     <aside className="sidebar">
-      <div className="wordmark">
-        <span className="wordmark-mark" aria-hidden>◆</span>
-        Agent Allowance
-      </div>
+      <Wordmark />
 
       <button className="btn-create" onClick={onCreate}>
         <Icon.Plus size={16} /> New policy

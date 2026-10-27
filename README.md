@@ -1,6 +1,8 @@
-# Agent Allowance
+# Leash
 
-**A policy firewall between AI agents and PayPal.** Businesses want AI agents to handle invoices, refunds, subscriptions and disputes, but nobody wants an agent with unlimited access to money. Agent Allowance sits between the agent and the PayPal tools. Every call is checked against the owner's rules and is **allowed**, **blocked**, or **held for human approval**, and everything is written to an audit log.
+*Keep your AI agent on a leash.* Spending guardrails for AI agents on PayPal.
+
+**A policy firewall between AI agents and PayPal.** Businesses want AI agents to handle invoices, refunds, subscriptions and disputes, but nobody wants an agent with unlimited access to money. Leash sits between the agent and the PayPal tools. Every call is checked against the owner's rules and is **allowed**, **blocked**, or **held for human approval**, and everything is written to an audit log.
 
 > Built for the PayPal AI Hackathon (2026). Created during the submission period (first commit Oct 26, 2026).
 

@@ -1,5 +1,5 @@
 {
-  "name": "agent-allowance",
+  "name": "leash",
   "version": "0.1.0",
   "private": true,
   "description": "A policy firewall between AI agents and PayPal: every money-moving tool call is allowed, blocked, or held for human approval.",

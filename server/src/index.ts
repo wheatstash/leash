@@ -123,5 +123,5 @@ app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
 });
 
 app.listen(config.port, () => {
-  console.log(`Agent Allowance API on http://localhost:${config.port} (PayPal: ${config.paypal.mock ? "mock" : "sandbox"})`);
+  console.log(`Leash API on http://localhost:${config.port} (PayPal: ${config.paypal.mock ? "mock" : "sandbox"})`);
 });
