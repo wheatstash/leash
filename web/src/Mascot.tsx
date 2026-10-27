@@ -110,7 +110,7 @@ export function Mascot({ event, caption }: { event?: BotEvent; caption?: string 
       <button
         type="button"
         className="bot-hit"
-        aria-label="Leash, the agent's guard dog. Click to play."
+        aria-label="The agent's guard dog. Click to play."
         onClick={() => setReaction({ kind: "spin", key: Date.now() })}
       >
         <svg key={reaction?.key} viewBox="0 0 220 250" role="img" aria-hidden="true">
