@@ -106,7 +106,7 @@ These are the APIs the toolkit calls when Leash allows a call, or when a held ca
 | OAuth 2.0 (client credentials) | `POST /v1/oauth2/token` (the token is redacted in traces) |
 | Invoicing v2 | `/v2/invoicing/invoices`, `/search-invoices`, `/generate-next-invoice-number`, `/recurring-invoices`, `/reminders`, `/setup-reminders` |
 | Payments v2 | `POST /v2/payments/captures/{id}/refund`, `GET /v2/payments/refunds/{id}` |
-| Orders v2 | `/v2/checkout/orders` (create, get, capture). The seed script also uses these to create real sandbox payments for the demo. |
+| Orders v2 + PayPal Checkout (JS SDK) | `/v2/checkout/orders` (create, get, capture). In the app, **Stock your shop with PayPal** renders PayPal's Checkout button; the visitor pays for the demo orders as the customer, and the server captures it into their workspace. The seed script uses the same API for the shared fallback payments. |
 | Subscriptions v1 | `/v1/billing/plans`, `/v1/billing/subscriptions` |
 | Catalog Products v1 | `/v1/catalogs/products` |
 | Disputes v1 | `/v1/customer/disputes` |

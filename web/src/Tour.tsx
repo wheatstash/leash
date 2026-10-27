@@ -87,7 +87,7 @@ const STEPS: Step[] = [
         and every PayPal call it makes goes through Leash.
       </>
     ),
-    tip: "Takes about a minute: real Claude calls and real sandbox refunds.",
+    tip: "Takes about a minute: real Claude calls and real sandbox refunds. For fresh payments of your own, use Stock your shop with PayPal on Home first.",
     action: { label: "Let the agent handle the inbox", run: () => clickTarget("[data-tour='handle-inbox']") },
   },
   {

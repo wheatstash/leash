@@ -6,6 +6,7 @@ import { execSync } from "node:child_process";
 import { chat, claudeLive, handleEmail } from "./agent.js";
 import { checkCredentials, currentUser, issueToken, loginRateLimited, requireAuth } from "./auth.js";
 import { budgetStatus, chargeAgentRun } from "./budget.js";
+import { captureCheckout, checkoutInfo, createCheckout } from "./checkout.js";
 import { loadSeededCaptures } from "./demo/orders.js";
 import { config } from "./config.js";
 import { guardedCall, resolveApproval } from "./gateway.js";
@@ -53,6 +54,7 @@ app.get("/api/status", (_req, res) => {
     approverName: config.approverName,
     toolCount: paypalTools.length,
     sandboxSeeded: loadSeededCaptures() !== null,
+    ownOrders: !!ws().captures,
   });
 });
 
@@ -139,6 +141,11 @@ app.post("/api/settings", (req, res) => {
 
 app.get("/api/inbox", (_req, res) => res.json(ws().inbox));
 
+// In-app checkout: the visitor pays for the demo orders in the PayPal sandbox, as the customer.
+app.get("/api/checkout", (_req, res) => res.json(checkoutInfo()));
+app.post("/api/checkout/orders", async (_req, res) => res.json(await createCheckout()));
+app.post("/api/checkout/orders/:id/capture", async (req, res) => res.json(await captureCheckout(req.params.id)));
+
 app.post("/api/inbox/:id/handle", async (req, res) => {
   const email = ws().inbox.find((e) => e.id === req.params.id);
   if (!email) return void res.status(404).json({ error: "Email not found" });
@@ -201,9 +208,10 @@ if (fs.existsSync(webDist)) {
 app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
   // Expected refusals (e.g. the agent budget) carry their own status; everything else is a 500.
   const status = (err as { status?: number }).status;
-  if (status && status < 500) {
+  if (status) {
     const retry = (err as { retryAfterSec?: number }).retryAfterSec;
     if (retry) res.set("Retry-After", String(retry));
+    if (status >= 500) console.error(err);
     return void res.status(status).json({ error: (err as Error).message });
   }
   console.error(err);

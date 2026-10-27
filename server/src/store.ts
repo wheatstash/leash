@@ -4,6 +4,7 @@ import type { Decision, Policy } from "./policy/types.js";
 import type { ToolArgs } from "./paypal.js";
 import type { HttpCall } from "./trace.js";
 import { seedEmails, type Email } from "./demo/inbox.js";
+import type { SeededCapture } from "./demo/orders.js";
 
 // In-memory store, one workspace per signed-in visitor so judges trying the hosted demo at the same
 // time don't see (or reset) each other's activity. Swap for SQLite/Postgres to persist.
@@ -71,6 +72,11 @@ export interface Workspace {
   chats: Map<string, unknown[]>;
   /** Timestamps of Claude-backed agent runs, for the hourly budget. */
   agentRuns: number[];
+  /** Sandbox captures from this visitor's own in-app checkout, by demo order number. */
+  captures: Record<string, SeededCapture> | null;
+  /** The PayPal order this visitor is checking out, and when their checkouts were created. */
+  checkout: { orderId: string; createdAt: number } | null;
+  checkouts: number[];
   lastSeen: number;
 }
 
@@ -93,6 +99,9 @@ function createWorkspace(id: string): Workspace {
     inbox: seedEmails(),
     chats: new Map(),
     agentRuns: [],
+    captures: null,
+    checkout: null,
+    checkouts: [],
     lastSeen: Date.now(),
   };
   for (const p of SEED) w.policies.push(makePolicy(p));
@@ -182,10 +191,11 @@ const SEED: Parameters<typeof addPolicy>[0][] = [
 
 /**
  * Clears this visitor's activity and restores the seeded policies and inbox, for retakes of the
- * demo. The agent budget is kept, so resetting can't be used to get more Claude runs.
+ * demo. The agent budget and the visitor's own sandbox payments are kept: resetting can't buy more
+ * Claude runs, and money already paid stays paid.
  */
 export function resetWorkspace() {
   const w = ws();
   const fresh = createWorkspace(w.id);
-  Object.assign(w, { ...fresh, agentRuns: w.agentRuns });
+  Object.assign(w, { ...fresh, agentRuns: w.agentRuns, captures: w.captures, checkouts: w.checkouts });
 }

@@ -143,7 +143,7 @@ export async function handleEmail(email: Email): Promise<AgentReply> {
   const prompt = `Handle this customer email. Take whatever PayPal actions are appropriate, then write the reply you would send the customer.
 
 Shop records (from our own order system):
-${shopRecordsFor(email)}
+${shopRecordsFor(email, ws().captures)}
 
 <customer_email>
 From: ${email.fromName} <${email.from}>

@@ -663,3 +663,27 @@ button.avatar:focus-visible { outline: 2px solid var(--accent); outline-offset: 
 @media (prefers-reduced-motion: reduce) { .auth-card { animation: none; } }
 
 .inbox-notice { margin: 0 16px 8px; padding: 10px 12px; border-radius: 10px; background: var(--warn-bg); color: var(--warn); font-size: 13px; font-weight: 500; }
+
+/* ---------- Stock your shop (in-app PayPal Checkout) ---------- */
+.modal-scrim { position: fixed; inset: 0; z-index: 50; background: rgb(11 13 18 / 0.4); backdrop-filter: blur(2px); animation: fade-in 150ms ease-out; }
+.modal {
+  position: fixed; z-index: 51; top: 50%; left: 50%; transform: translate(-50%, -50%); width: min(520px, calc(100vw - 32px));
+  max-height: calc(100vh - 48px); overflow-y: auto; padding: 28px 28px 24px; border-radius: 18px; background: white;
+  box-shadow: 0 24px 60px rgb(11 13 18 / 0.25); display: grid; gap: 12px; animation: modal-in 220ms var(--ease);
+}
+@keyframes modal-in { from { opacity: 0; transform: translate(-50%, -47%); } }
+.modal-close { position: absolute; top: 14px; right: 14px; }
+.modal-title { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; }
+.modal-body { font-size: 14.5px; line-height: 1.55; color: var(--text); }
+.modal-note { font-size: 12.5px; color: var(--muted); }
+.modal-actions { display: flex; justify-content: flex-end; margin-top: 4px; }
+.stock-items { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.stock-items td { padding: 7px 0; border-top: 1px solid var(--border-soft); }
+.stock-items td:first-child { width: 56px; color: var(--muted); }
+.stock-amount { text-align: right; }
+.stock-total td { font-weight: 700; border-top: 1px solid var(--border); }
+.stock-buyer { padding: 10px 12px; border-radius: 10px; background: var(--subtle); font-size: 13px; display: grid; gap: 2px; }
+.stock-buttons { min-height: 52px; }
+.inbox-stock { margin: 0 16px 8px; padding: 10px 12px; border-radius: 10px; background: #eef5fe; color: #1d3354; font-size: 13px; }
+.inbox-stock .link { font-size: 13px; font-weight: 600; }
+@media (prefers-reduced-motion: reduce) { .modal, .modal-scrim { animation: none; } }

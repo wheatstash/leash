@@ -9,6 +9,17 @@ export interface Status {
   approverName: string;
   toolCount: number;
   sandboxSeeded: boolean;
+  /** This visitor paid for the demo orders in the in-app checkout. */
+  ownOrders: boolean;
+}
+
+export interface CheckoutInfo {
+  available: boolean;
+  clientId: string | null;
+  total: number;
+  items: { number: string; customer: string; item: string; amount: number }[];
+  buyer: { email: string; password: string } | null;
+  stocked: boolean;
 }
 
 export interface Settings {
@@ -169,6 +180,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 export const api = {
   status: () => request<Status>("/status"),
   stack: () => request<Stack>("/stack"),
+  checkoutInfo: () => request<CheckoutInfo>("/checkout"),
+  createCheckout: () => request<{ id: string }>("/checkout/orders", { method: "POST" }),
+  captureCheckout: (orderId: string) =>
+    request<{ captureId: string; status: string; amount: number }>(`/checkout/orders/${encodeURIComponent(orderId)}/capture`, { method: "POST" }),
   audit: () => request<AuditEntry[]>("/audit"),
   approvals: () => request<Approval[]>("/approvals"),
   spend: () => request<Spend>("/spend"),

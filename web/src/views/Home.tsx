@@ -19,6 +19,7 @@ interface Props {
   onToggleGuardrails: () => void;
   onReset: () => void;
   onChange: () => void;
+  onStock: () => void;
 }
 
 const MOVED: AuditEntry["status"][] = ["executed", "approved"];
@@ -105,17 +106,18 @@ export function Home(props: Props) {
           onClick={props.onToggleGuardrails}
           tone={guardrails ? undefined : "bad"}
         />
-        <TaskCard
-          icon={<Icon.Bank />}
-          title={status?.paypalMode === "mock" ? "Connect a PayPal sandbox" : status?.sandboxSeeded ? "Sandbox orders are ready" : "Seed sandbox orders"}
-          body={
-            status?.paypalMode === "mock"
-              ? "Running in mock mode. Add sandbox keys to server/.env."
-              : status?.sandboxSeeded
-                ? "Refunds hit real PayPal sandbox payments."
-                : "Run npm run seed so refunds have real payments to act on."
-          }
-        />
+        {status?.paypalMode === "mock" ? (
+          <TaskCard icon={<Icon.Bank />} title="Connect a PayPal sandbox" body="Running in mock mode. Add sandbox keys to server/.env." />
+        ) : status?.ownOrders ? (
+          <TaskCard icon={<Icon.Bank />} title="Your shop is stocked" body="The agent's refunds hit the PayPal sandbox payment you made." onClick={props.onStock} />
+        ) : (
+          <TaskCard
+            icon={<Icon.Bank />}
+            title="Stock your shop with PayPal"
+            body="Play the customer: pay for this week's orders in the PayPal sandbox, then watch the agent refund your payment."
+            onClick={props.onStock}
+          />
+        )}
       </section>
 
       <section>

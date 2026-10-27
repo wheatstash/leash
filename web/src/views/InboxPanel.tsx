@@ -3,7 +3,7 @@ import { api, type Email } from "../api";
 import { StatusBadge } from "../StatusBadge";
 import { useOpenTrace } from "../traceContext";
 
-export function InboxPanel({ emails, onActivity }: { emails: Email[]; onActivity: () => void }) {
+export function InboxPanel({ emails, onActivity, stocked, onStock }: { emails: Email[]; onActivity: () => void; stocked: boolean; onStock: () => void }) {
   const openTrace = useOpenTrace();
   const [openId, setOpenId] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
@@ -47,6 +47,14 @@ export function InboxPanel({ emails, onActivity }: { emails: Email[]; onActivity
           {running ? "Agent working…" : "Let the agent handle the inbox"}
         </button>
       </div>
+      {!stocked && (
+        <p className="inbox-stock">
+          These orders use shared sandbox payments that other visitors may have refunded already.{" "}
+          <button className="link" onClick={onStock}>
+            Pay for your own with PayPal
+          </button>
+        </p>
+      )}
       {notice && (
         <p className="inbox-notice" role="status">
           {notice}

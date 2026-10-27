@@ -36,6 +36,8 @@ $$
 
 Flip **Guardrails off** and the same agent sends Sam's $1,450 straight through. That's the problem, shown live.
 
+**You can play the customer, too:** **Stock your shop with PayPal** opens a real PayPal Checkout (sandbox). Pay for the week's orders, and the agent refunds *your* payment, with Leash deciding how much it may.
+
 **Built so judges can verify it, not take it on faith:**
 - **Call trace inspector:** click any audit row to see one call end to end:
   1. The Claude response that chose the tool (model, request ID, tokens, raw `tool_use` input).
@@ -78,7 +80,7 @@ Claude Code turned that direction into working code far faster than I could alon
 
 - **Making the gateway the only path to PayPal.** The toolkit is built to hand tools straight to an agent framework. We had to take it apart, keep only the schemas and `execute` functions, and make sure the agent never gets a raw tool.
 - **Amounts hide in different places.** A refund, an invoice and an order all describe money differently. A cap is only as good as the amount extraction behind it.
-- **Real money for a fake shop.** Refunds need real captures. My sandbox account couldn't process card payments, so the seed script fell back to creating orders, approving them as the sandbox buyer, and capturing them.
+- **Real money for a fake shop.** Refunds need real captures, and every refund uses one up. My sandbox account couldn't process card payments, so I couldn't pay for orders automatically. The fix became a feature: judges **stock the shop themselves** with an in-app PayPal Checkout, paying as the customer, and the agent then refunds the payment they just made.
 - **Proving it to judges.** Screenshots of JSON prove nothing. Capturing the toolkit's actual HTTP traffic took some digging: it uses axios's shared CommonJS instance, which isn't the one an ES module import gives you.
 - **Opening a public demo safely.** A live URL with real Claude and PayPal calls behind it needs:
   - a sign-in gate

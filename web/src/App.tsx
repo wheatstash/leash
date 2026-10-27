@@ -14,6 +14,7 @@ import { Home } from "./views/Home";
 import { InboxPanel } from "./views/InboxPanel";
 import { PoliciesView } from "./views/PoliciesView";
 import { SpendView } from "./views/SpendView";
+import { StockShop } from "./views/StockShop";
 import { TraceDrawer } from "./views/TraceDrawer";
 
 const TITLES: Record<Page, string> = {
@@ -30,6 +31,9 @@ export function App({ user, onSignOut }: { user: string; onSignOut: () => void }
   const [page, setPage] = useState<Page>("home");
   const [traceId, setTraceId] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [stockOpen, setStockOpen] = useState(false);
+  const openStock = useCallback(() => setStockOpen(true), []);
+  const closeStock = useCallback(() => setStockOpen(false), []);
   useEffect(() => {
     if (!menuOpen) return;
     const close = (e: MouseEvent) => !(e.target as HTMLElement).closest(".account") && setMenuOpen(false);
@@ -219,13 +223,14 @@ export function App({ user, onSignOut }: { user: string; onSignOut: () => void }
                 onToggleGuardrails={toggleGuardrails}
                 onReset={resetDemo}
                 onChange={refreshAll}
+                onStock={openStock}
               />
             )}
 
             {page === "inbox" && (
               <div className="split">
                 <section className="panel" {...xray("claude", "Claude agent loop · tool use over 47 PayPal Agent Toolkit tools, every call through Leash")}>
-                  <InboxPanel emails={inbox.data ?? []} onActivity={refreshAll} />
+                  <InboxPanel emails={inbox.data ?? []} onActivity={refreshAll} stocked={!!status.data?.ownOrders || status.data?.paypalMode === "mock"} onStock={openStock} />
                 </section>
                 <section className="panel panel-pad" data-tour="live-activity">
                   <h3 className="section-title">Live activity</h3>
@@ -255,6 +260,15 @@ export function App({ user, onSignOut }: { user: string; onSignOut: () => void }
         </div>
         <TraceDrawer entry={audit.data?.find((e) => e.id === traceId) ?? null} onClose={closeTrace} />
         <Tour open={tourOpen} onClose={closeTour} ctx={tourCtx} />
+        <StockShop
+          open={stockOpen}
+          onClose={closeStock}
+          onStocked={refreshAll}
+          onGoToInbox={() => {
+            setStockOpen(false);
+            setPage("inbox");
+          }}
+        />
       </div>
     </TraceContext.Provider>
   );

@@ -33,6 +33,11 @@ services:
         value: "true"
       - key: AUTH_SECRET
         generateValue: true
+      # Optional: a PayPal *sandbox* personal account shown on the in-app checkout.
+      - key: SANDBOX_BUYER_EMAIL
+        sync: false
+      - key: SANDBOX_BUYER_PASSWORD
+        sync: false
       # Direct tool calls skip the agent budget; keep them off on the public demo.
       - key: ALLOW_DIRECT_TOOLS
         value: "false"

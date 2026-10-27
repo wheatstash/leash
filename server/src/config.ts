@@ -38,6 +38,13 @@ export const config = {
     secret: env("AUTH_SECRET"),
   },
 
+  // Shown on the in-app checkout so judges can pay as the sandbox buyer (a sandbox personal
+  // account, not a real one). Optional.
+  checkout: {
+    buyerEmail: env("SANDBOX_BUYER_EMAIL"),
+    buyerPassword: env("SANDBOX_BUYER_PASSWORD"),
+  },
+
   // POST /api/tools/:name calls a PayPal tool directly (through the firewall, but without Claude or
   // the agent budget). Handy for local testing; switched off on the hosted demo.
   allowDirectTools: env("ALLOW_DIRECT_TOOLS", "true") === "true",

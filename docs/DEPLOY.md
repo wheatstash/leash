@@ -77,10 +77,7 @@ These are listed by value for effort. None of them block a first deploy.
 
 1. ~~**Per-visitor demo state.**~~ **Done.** Each sign-in gets its own workspace (inbox, audit log, approvals, policies, guardrails), so judges don't see or reset each other's activity. Workspaces expire with the 12-hour session, and the server keeps at most 300.
 2. ~~**An agent budget.**~~ **Done.** There are 30 Claude-backed runs per visitor per hour and 600 per UTC day overall (`AGENT_RUNS_PER_HOUR`, `AGENT_RUNS_PER_DAY` in `render.yaml`). Resetting the demo doesn't refill them, and the status bar shows what's left. Keep the Anthropic Console spend limit as the backstop.
-3. **Captures that last (medium value, medium effort).** Each judge who approves Diego's $250 refund uses up that capture, and later attempts fail at PayPal. That's honest, and the trace shows the PayPal error, but it's not the intended story. Options:
-   - A `npm run seed` refresh before each judging week.
-   - Smaller demo refund amounts.
-   - A pool of captures handed out per session.
+3. ~~**Captures that last.**~~ **Done, with an in-app PayPal Checkout.** Home's **Stock your shop with PayPal** card lets a visitor pay for the four demo orders as the customer ($1,780 in one sandbox checkout). The capture goes into their own workspace, so the agent refunds *their* payment and no one has to re-seed. Visitors who skip it fall back to the shared `DEMO_CAPTURES`, which can run out; the inbox suggests stocking up. Set `SANDBOX_BUYER_EMAIL` and `SANDBOX_BUYER_PASSWORD` (a sandbox personal account) in Render to show judges a buyer login on the checkout.
 
 ## 5b. Known dependency advisories
 
@@ -99,6 +96,6 @@ Re-run `npm audit` after any toolkit upgrade.
 - **Keep the service up.** Don't let the plan lapse or the service suspend. The rules require the project to stay available until judging ends.
 - **Watch the logs** in the Render dashboard for errors, and the Anthropic Console for usage.
 - **Restarts are safe but forgetful.** Activity is in memory, so a restart or redeploy clears the audit log and approvals. Seeded captures and policies come back automatically.
-- **Re-seed if refunds start failing.** Run the seed locally, then paste the new `demo-orders.json` into `DEMO_CAPTURES`; saving an env var triggers a redeploy.
+- **Refunds failing on the shared payments?** Judges can stock their own shop in the app. To refresh the shared fallback too, re-seed: Run the seed locally, then paste the new `demo-orders.json` into `DEMO_CAPTURES`; saving an env var triggers a redeploy.
 - **Rollback:** Render's **Deploys** tab can roll back to any previous build in one click.
 - **After Dec 15:** downgrade to free, suspend, or delete the service, and revoke the demo Anthropic key.

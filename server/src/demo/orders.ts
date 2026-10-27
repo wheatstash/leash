@@ -45,6 +45,12 @@ export function loadSeededCaptures(): Record<string, SeededCapture> | null {
   }
 }
 
-export function captureIdFor(orderNumber: string): string {
-  return loadSeededCaptures()?.[orderNumber]?.captureId ?? `MOCKCAPTURE${orderNumber}DEMO`;
+/**
+ * The capture to refund for an order: the visitor's own (from their in-app checkout) if they
+ * placed one, else the shared seeded capture, else a mock id.
+ */
+export function captureIdFor(orderNumber: string, own?: Record<string, SeededCapture> | null): string {
+  return own?.[orderNumber]?.captureId ?? loadSeededCaptures()?.[orderNumber]?.captureId ?? `MOCKCAPTURE${orderNumber}DEMO`;
 }
+
+export const DEMO_ORDERS_TOTAL = DEMO_ORDERS.reduce((sum, o) => sum + o.amount, 0);

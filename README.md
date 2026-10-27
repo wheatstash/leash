@@ -94,7 +94,7 @@ Then:
 
 **Reset demo** clears all activity, restores the inbox and seeded policies, and turns guardrails back on, so you can do another take.
 
-Refunds in sandbox mode are real sandbox refunds, so they use up the seeded payments (a capture can't be refunded twice). Run the seed again to get fresh orders before recording a final take.
+Refunds in sandbox mode are real sandbox refunds, so they use up payments (a capture can't be refunded twice). **Stock your shop with PayPal** on Home gives each visitor fresh payments: they pay for the four demo orders in one in-app PayPal Checkout (sandbox), and the agent refunds that payment. The seeded payments are only the shared fallback.
 
 ## Demo sign-in
 
@@ -112,6 +112,7 @@ Every `/api` route requires a session, so a public demo URL can't be used to spe
 | `DEMO_CAPTURES` | from `server/data/demo-orders.json` | The seeded sandbox payments as JSON, for hosts without that file (Render) |
 | `AGENT_RUNS_PER_HOUR` | `30` | Claude-backed runs per visitor per hour (`0` switches agent runs off) |
 | `AGENT_RUNS_PER_DAY` | `600` | Claude-backed runs per UTC day across all visitors |
+| `SANDBOX_BUYER_EMAIL` / `SANDBOX_BUYER_PASSWORD` | empty | A PayPal **sandbox** personal account shown on the in-app checkout, so judges can pay as the customer |
 | `ALLOW_DIRECT_TOOLS` | `true` (`false` on Render) | Allow `POST /api/tools/:name`, which calls a PayPal tool through the firewall without Claude. It skips the agent budget, so it's off on the hosted demo. |
 
 ## Deploy (Render)
