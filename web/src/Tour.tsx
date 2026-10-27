@@ -70,7 +70,7 @@ const STEPS: Step[] = [
   },
   {
     page: "home",
-    target: ".xray-toggle",
+    target: "[data-tour='xray']",
     title: "X-ray mode",
     body: "Labels every part of the console with the technology behind it, color-coded by PayPal, Claude, Leash, AG Grid and Render.",
     tip: "Press X at any time to toggle it.",
@@ -131,7 +131,7 @@ const STEPS: Step[] = [
   },
   {
     page: "approvals",
-    target: ".switch",
+    target: "[data-tour='guardrails']",
     title: "The contrast",
     body: "Turn guardrails off and the same agent moves money with no limits: Sam's $1,450 refund goes straight through. That's the risk Leash exists to remove.",
     tip: "Reset demo (on Home) clears everything and turns guardrails back on.",

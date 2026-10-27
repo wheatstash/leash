@@ -132,7 +132,7 @@ Claude has two jobs:
 | Tool | Role |
 |---|---|
 | **AG Grid Community** 34 | The audit log, approvals queue, policies and spend tables, live-updated every 2 seconds. Clicking an audit row opens its call trace. |
-| **Render** | One web service (`render.yaml`): Express serves the API and the built console. The status bar shows the deployed commit from Render's environment. |
+| **Render** | One web service (`render.yaml`): Express serves the API and the built console behind the demo sign-in. The status bar shows the deployed commit from Render's environment. |
 | **React 19 + Vite**, **Express 5**, **Node 22**, **TypeScript** | Console and API. |
 | **Claude Code** | AI coding assistant used during development. |
 
@@ -155,6 +155,7 @@ Leash is built so judges can verify the integration instead of taking it on fait
   - Host and deployed commit, linked to GitHub.
 - **X-ray mode:** the header toggle, the **X** key, or `/?xray=1`. It outlines every part of the console and labels the technology behind it, color-coded.
 - **Guided tour:** the **Guide** button walks through the whole demo on screen.
+- **Demo sign-in:** judges sign in with `judge@example.com` / `leash-demo-2026`, or use the one-click **Use demo credentials** button.
 
 ## 6. The demo scenario
 
@@ -180,6 +181,8 @@ Then:
 - **Most restrictive wins.** Overlapping rules can't loosen each other.
 - **The agent is told the truth.** Blocked and held calls return clear tool results, and the system prompt forbids retrying or working around them.
 - **Secrets stay server-side.** PayPal and Anthropic keys live only in server environment variables. Traces redact the client secret and access token.
+- **The demo is gated.** Every API route requires a signed, expiring session from the demo sign-in, and login attempts are rate-limited. A public URL can't be used anonymously to spend model or sandbox quota.
+- **Each visitor gets a private workspace, and the agent has a budget.** Each sign-in gets its own inbox, audit log, approvals and policies. Claude-backed runs are capped per visitor per hour and per day overall.
 - **Mock mode.** Without PayPal credentials, the whole console still runs with simulated tool results.
 
 ## 8. Limitations and what's next
@@ -198,7 +201,7 @@ Then:
 
 **What it does.** Leash is a policy firewall between an AI agent and PayPal. The owner writes rules in plain English, and Claude turns each one into a typed policy. Every tool call the agent makes (all 47 PayPal Agent Toolkit tools) is checked first, then allowed, blocked, or held for one-click approval, and logged with a full trace down to the PayPal REST request.
 
-**How we built it.** A TypeScript/Express gateway wraps every PayPal Agent Toolkit tool. Claude Opus 5.5 runs the operations agent through a manual tool-use loop, with adaptive thinking, prompt caching and server-side fallback. It also translates rules with structured outputs. An AG Grid console shows the audit log, approvals, spend and policies. A trace inspector captures the toolkit's real PayPal HTTP traffic, with debug IDs, by hooking its HTTP client. The app is deployed on Render.
+**How we built it.** A TypeScript/Express gateway wraps every PayPal Agent Toolkit tool. Claude Opus 5.5 runs the operations agent through a manual tool-use loop, with adaptive thinking, prompt caching and server-side fallback. It also translates rules with structured outputs. An AG Grid console shows the audit log, approvals, spend and policies. A trace inspector captures the toolkit's real PayPal HTTP traffic, with debug IDs, by hooking its HTTP client. The app is deployed on Render, behind a demo sign-in.
 
 **Challenges.**
 - Making the gateway the *only* path to PayPal.

@@ -3,7 +3,7 @@ import { config } from "./config.js";
 import { shopRecordsFor, type Email } from "./demo/inbox.js";
 import { guardedCall, type GatewayResult } from "./gateway.js";
 import { paypalTools, type ToolArgs } from "./paypal.js";
-import { newId, type ClaudeTrace } from "./store.js";
+import { newId, ws, type ClaudeTrace } from "./store.js";
 
 const client = new Anthropic();
 
@@ -46,10 +46,11 @@ export const claudeLive = {
   tokens: { input: 0, output: 0, cacheRead: 0 },
 };
 
-const sessions = new Map<string, Anthropic.Beta.BetaMessageParam[]>();
 const MAX_STEPS = 12;
 
 export async function chat(sessionId: string | undefined, userText: string): Promise<AgentReply> {
+  // Chat history lives in the visitor's workspace, so sessions can't be read across visitors.
+  const sessions = ws().chats as Map<string, Anthropic.Beta.BetaMessageParam[]>;
   const id = sessionId && sessions.has(sessionId) ? sessionId : newId();
   const messages = sessions.get(id) ?? [];
   sessions.set(id, messages);

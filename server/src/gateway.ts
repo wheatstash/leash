@@ -2,10 +2,12 @@ import { extractAmount } from "./policy/amount.js";
 import { evaluate } from "./policy/engine.js";
 import { config } from "./config.js";
 import { paypalToolsByName, type ToolArgs } from "./paypal.js";
-import { approvals, audit, newId, settings, type Approval, type AuditEntry, type ClaudeTrace } from "./store.js";
+import { newId, ws, type Approval, type AuditEntry, type ClaudeTrace } from "./store.js";
 import { httpTrace, packageVersion, type HttpCall } from "./trace.js";
 
 const TOOLKIT = "@paypal/agent-toolkit";
+const MAX_AUDIT = 500;
+const MAX_RESOLVED_APPROVALS = 100;
 const toolkitVersion = packageVersion(TOOLKIT, `${TOOLKIT}/ai-sdk`);
 
 export interface GatewayResult {
@@ -75,6 +77,7 @@ export async function guardedCall(
   }
 
   const policyStart = performance.now();
+  const { audit, approvals, settings } = ws();
   const decision = settings.guardrails
     ? evaluate(toolName, args)
     : { action: "allow" as const, reason: "Guardrails off: no policy checked", policyIds: [], amount: extractAmount(args), checks: [] };
@@ -97,6 +100,13 @@ export async function guardedCall(
     },
   };
   audit.unshift(entry);
+  // Bound each visitor's memory: keep the newest entries, and drop old resolved approvals.
+  if (audit.length > MAX_AUDIT) audit.length = MAX_AUDIT;
+  const resolved = approvals.filter((a) => a.status !== "pending");
+  if (resolved.length > MAX_RESOLVED_APPROVALS) {
+    const drop = new Set(resolved.slice(MAX_RESOLVED_APPROVALS));
+    approvals.splice(0, approvals.length, ...approvals.filter((a) => !drop.has(a)));
+  }
 
   if (decision.action === "deny") {
     entry.status = "blocked";
@@ -134,6 +144,7 @@ export async function guardedCall(
 }
 
 export async function resolveApproval(id: string, approve: boolean): Promise<Approval> {
+  const { audit, approvals } = ws();
   const approval = approvals.find((a) => a.id === id);
   if (!approval) throw new Error("Approval not found");
   if (approval.status !== "pending") throw new Error(`Approval already ${approval.status}`);

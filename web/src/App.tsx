@@ -26,9 +26,16 @@ const TITLES: Record<Page, string> = {
   policies: "Policies",
 };
 
-export function App() {
+export function App({ user, onSignOut }: { user: string; onSignOut: () => void }) {
   const [page, setPage] = useState<Page>("home");
   const [traceId, setTraceId] = useState<string | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  useEffect(() => {
+    if (!menuOpen) return;
+    const close = (e: MouseEvent) => !(e.target as HTMLElement).closest(".account") && setMenuOpen(false);
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [menuOpen]);
   const closeTrace = useCallback(() => setTraceId(null), []);
   const [xrayOn, setXrayOn] = useState(() => {
     // ?xray=1 opens the console with X-ray on, e.g. in a link for judges.
@@ -137,11 +144,12 @@ export function App() {
                 </span>
               )}
               {status.error && <span className="pill pill-bad">API offline</span>}
-              <button className="xray-toggle" onClick={() => setTourOpen(true)} title="Walk through the demo on screen">
+              <button className="xray-toggle" data-tour="guide" onClick={() => setTourOpen(true)} title="Walk through the demo on screen">
                 <Icon.Sparkle size={16} /> Guide
               </button>
               <button
                 className={`xray-toggle ${xrayOn ? "xray-toggle-on" : ""}`}
+                data-tour="xray"
                 aria-pressed={xrayOn}
                 onClick={() => setXrayOn((v) => !v)}
                 title="Show the tech behind each part of the console (X)"
@@ -150,6 +158,7 @@ export function App() {
               </button>
               <button
                 className={`switch ${guardrails ? "switch-on" : "switch-off"}`}
+                data-tour="guardrails"
                 role="switch"
                 aria-checked={guardrails}
                 onClick={toggleGuardrails}
@@ -162,7 +171,22 @@ export function App() {
                 <span className="bell-count">{pending}</span>
               </button>
               <span className="divider" aria-hidden />
-              <span className="avatar" title="Maria (shop owner)">MC</span>
+              <div className="account">
+                <button className="avatar" onClick={() => setMenuOpen((o) => !o)} aria-haspopup="menu" aria-expanded={menuOpen} title={`Signed in as ${user}`}>
+                  MC
+                </button>
+                {menuOpen && (
+                  <div className="account-menu" role="menu">
+                    <p className="account-who">
+                      <span className="muted">Signed in as</span>
+                      <span className="mono">{user}</span>
+                    </p>
+                    <button role="menuitem" className="account-item" onClick={onSignOut}>
+                      Sign out
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </header>
 

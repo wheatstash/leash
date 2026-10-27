@@ -7,11 +7,18 @@ export function InboxPanel({ emails, onActivity }: { emails: Email[]; onActivity
   const openTrace = useOpenTrace();
   const [openId, setOpenId] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
 
-  async function handle(id: string) {
+  /** Returns false if the email couldn't be handled (e.g. the agent budget ran out). */
+  async function handle(id: string): Promise<boolean> {
     setOpenId(id);
+    setNotice(null);
     try {
       await api.handleEmail(id);
+      return true;
+    } catch (err) {
+      setNotice(err instanceof Error ? err.message : String(err));
+      return false;
     } finally {
       onActivity();
     }
@@ -23,7 +30,7 @@ export function InboxPanel({ emails, onActivity }: { emails: Email[]; onActivity
     try {
       for (const e of emails.filter((e) => e.status === "unread" || e.status === "error")) {
         onActivity();
-        await handle(e.id);
+        if (!(await handle(e.id))) break;
       }
     } finally {
       setRunning(false);
@@ -40,6 +47,11 @@ export function InboxPanel({ emails, onActivity }: { emails: Email[]; onActivity
           {running ? "Agent working…" : "Let the agent handle the inbox"}
         </button>
       </div>
+      {notice && (
+        <p className="inbox-notice" role="status">
+          {notice}
+        </p>
+      )}
 
       <ul className="mail-list">
         {emails.map((e) => {

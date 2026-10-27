@@ -16,7 +16,7 @@ export interface Email {
   error?: string;
 }
 
-function seedEmails(): Email[] {
+export function seedEmails(): Email[] {
   const capture1047 = captureIdFor("1047");
   return [
     {
@@ -74,12 +74,6 @@ function seedEmails(): Email[] {
       status: "unread",
     },
   ];
-}
-
-export const inbox: Email[] = seedEmails();
-
-export function resetInbox() {
-  inbox.splice(0, inbox.length, ...seedEmails());
 }
 
 /** Trusted context from the shop's own order system, given alongside the email. */

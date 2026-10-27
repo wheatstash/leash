@@ -10,7 +10,8 @@
 
 - **What Leash is, the problem it solves, and every tool and API it uses:** [docs/ABOUT.md](docs/ABOUT.md).
 - **On-screen guide:** the console opens with a 13-step guided tour on your first visit. You can also reopen it from **Guide** in the header, or link to a step with `/?tour=N`. It walks the whole demo, switches pages for you, and can perform each step's action.
-- **Hosted demo:** _coming soon (Render URL)_. Nothing to install; the PayPal sandbox and Claude are already configured.
+- **Demo sign-in:** email `judge@example.com`, password `leash-demo-2026`. The sign-in screen also has a **Use demo credentials** button that fills them in.
+- **Hosted demo:** https://leash-y52a.onrender.com. Nothing to install; the PayPal sandbox and Claude are already configured.
 - **Run it yourself:** follow [Run it locally](#run-it-locally). You need your own free [PayPal sandbox app](https://developer.paypal.com/dashboard/applications/sandbox) and an [Anthropic API key](https://console.anthropic.com). Without PayPal credentials the app still runs in mock mode.
 - **Demo script:** see [Try the demo flow](#try-the-demo-flow). Use **Reset demo** to start over.
 - **See the tech on screen:** click any row in the audit log (or any tool chip in the inbox, chat or recent activity) to open its **call trace**:
@@ -94,9 +95,27 @@ Then:
 
 Refunds in sandbox mode are real sandbox refunds, so they use up the seeded payments (a capture can't be refunded twice). Run the seed again to get fresh orders before recording a final take.
 
+## Demo sign-in
+
+Every `/api` route requires a session, so a public demo URL can't be used to spend the Anthropic or PayPal sandbox quota anonymously. Sign in with the demo credentials and the server issues a signed token that expires after 12 hours. Login attempts are rate-limited per IP.
+
+- **Each sign-in gets its own demo workspace:** its own inbox, audit log, approvals, policies and guardrails switch. Judges trying the demo at the same time don't see or reset each other's activity. The seeded PayPal sandbox payments are shared, since they're real sandbox captures.
+- **An agent budget caps Claude-backed runs:** a chat message, one email handled, or one rule translated. The default is 30 per visitor per hour and 600 per day across everyone. Resetting the demo doesn't refill it. The status bar shows how many runs you have left.
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `DEMO_EMAIL` | `judge@example.com` | Demo login email |
+| `DEMO_PASSWORD` | `leash-demo-2026` | Demo login password |
+| `DEMO_SHOW_CREDENTIALS` | `true` | Show the credentials on the sign-in screen (for judges) |
+| `AUTH_SECRET` | random per boot | Signs session tokens. Render generates one, so sessions survive restarts. |
+| `DEMO_CAPTURES` | from `server/data/demo-orders.json` | The seeded sandbox payments as JSON, for hosts without that file (Render) |
+| `AGENT_RUNS_PER_HOUR` | `30` | Claude-backed runs per visitor per hour (`0` switches agent runs off) |
+| `AGENT_RUNS_PER_DAY` | `600` | Claude-backed runs per UTC day across all visitors |
+| `ALLOW_DIRECT_TOOLS` | `true` (`false` on Render) | Allow `POST /api/tools/:name`, which calls a PayPal tool through the firewall without Claude. It skips the agent budget, so it's off on the hosted demo. |
+
 ## Deploy (Render)
 
-`render.yaml` defines a single web service: the Node server builds and serves the console. Create a Blueprint from the repo on Render and set `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET` and `ANTHROPIC_API_KEY` in the dashboard.
+`render.yaml` is a Render Blueprint for one Node web service that serves both the API and the built console. It sets up the health check (`/api/health`), the demo sign-in settings and a generated `AUTH_SECRET`. You enter three secrets in the dashboard: `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET` and `ANTHROPIC_API_KEY`. You also paste the seeded sandbox payments into `DEMO_CAPTURES`. Full steps and the judging-period checklist are in [docs/DEPLOY.md](docs/DEPLOY.md).
 
 ## Tools used
 
@@ -107,7 +126,7 @@ Refunds in sandbox mode are real sandbox refunds, so they use up the seeded paym
 | **Claude Opus 5.5** (Anthropic API, `@anthropic-ai/sdk`) | (1) The ops agent's tool-use loop; (2) translating plain-English rules into structured policies. |
 | **AG Grid Community** | Approvals queue, audit log, policies and spend tables in the console. |
 | **Animated SVG mascot** | Leash's robot guard dog, with a PayPal medallion on its collar. It wags, blinks, offers a paw, follows the cursor, and reacts to each firewall decision: it hops with ^ ^ eyes and a fast wag when a call runs, tilts its head when one is held, and growls with ears back and red > < eyes when one is blocked. |
-| **Render** | Hosting. |
+| **Render** | Hosting: one web service serving the API and the console. |
 | **Claude Code** | AI coding assistant used during development. |
 
 ### Third-party software

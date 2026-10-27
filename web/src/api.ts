@@ -1,3 +1,5 @@
+import { getToken, signOut } from "./session";
+
 export type Action = "allow" | "deny" | "require_approval";
 export type AuditStatus = "executed" | "blocked" | "pending_approval" | "approved" | "rejected" | "failed";
 
@@ -68,6 +70,8 @@ export interface Stack {
     lastMs: number | null;
   };
   toolkit: { version: string | null; tools: number };
+  budget: { hour: { used: number; limit: number; resetsInSec: number }; day: { used: number; limit: number } };
+  visitors: number;
   claude: {
     model: string;
     effort: string;
@@ -148,10 +152,13 @@ export interface ChatReply {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const token = getToken();
   const res = await fetch(`/api${path}`, {
-    headers: { "Content-Type": "application/json" },
     ...init,
+    headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
   });
+  // An expired or revoked session sends the console back to the sign-in screen.
+  if (res.status === 401) signOut();
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     throw new Error(body.error ?? `Request failed (${res.status})`);

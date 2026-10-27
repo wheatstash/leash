@@ -1,11 +1,11 @@
-import { audit, policies, type AuditEntry } from "../store.js";
+import { ws, type AuditEntry } from "../store.js";
 import type { ToolArgs } from "../paypal.js";
 import { extractAmount } from "./amount.js";
 import type { Decision, Policy, PolicyAction } from "./types.js";
 
 const SEVERITY: Record<PolicyAction, number> = { allow: 0, require_approval: 1, deny: 2 };
 
-export function toolMatches(patterns: string[], tool: string): boolean {
+function toolMatches(patterns: string[], tool: string): boolean {
   return patterns.some((p) => p === "*" || p === tool || (p.endsWith("*") && tool.startsWith(p.slice(0, -1))));
 }
 
@@ -14,7 +14,7 @@ const COUNTED: AuditEntry["status"][] = ["executed", "approved", "pending_approv
 
 function recent(policy: Policy, sinceMs: number): AuditEntry[] {
   const cutoff = Date.now() - sinceMs;
-  return audit.filter(
+  return ws().audit.filter(
     (e) => COUNTED.includes(e.status) && toolMatches(policy.tools, e.tool) && Date.parse(e.timestamp) >= cutoff,
   );
 }
@@ -51,7 +51,7 @@ export function evaluate(tool: string, args: ToolArgs): Decision {
   const hits: { policy: Policy; why: string }[] = [];
   const checks: Decision["checks"] = [];
 
-  for (const policy of policies) {
+  for (const policy of ws().policies) {
     const applies = policy.enabled && toolMatches(policy.tools, tool);
     const why = applies ? triggers(policy, amount) : null;
     checks.push({ policyId: policy.id, name: policy.name, action: policy.action, enabled: policy.enabled, applies, triggered: why !== null, why });
@@ -74,7 +74,7 @@ export function evaluate(tool: string, args: ToolArgs): Decision {
 
 export function spendSummary() {
   const since = startOfToday();
-  const today = audit.filter((e) => COUNTED.includes(e.status) && Date.parse(e.timestamp) >= since);
+  const today = ws().audit.filter((e) => COUNTED.includes(e.status) && Date.parse(e.timestamp) >= since);
   const byTool = new Map<string, { tool: string; calls: number; amount: number }>();
   for (const e of today) {
     const row = byTool.get(e.tool) ?? { tool: e.tool, calls: 0, amount: 0 };
@@ -82,7 +82,7 @@ export function spendSummary() {
     row.amount += e.amount ?? 0;
     byTool.set(e.tool, row);
   }
-  const caps = policies
+  const caps = ws().policies
     .filter((p) => p.enabled && p.dailyLimit !== null)
     .map((p) => {
       const used = recent(p, Date.now() - since).reduce((s, e) => s + (e.amount ?? 0), 0);

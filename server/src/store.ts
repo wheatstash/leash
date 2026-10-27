@@ -1,9 +1,12 @@
+import { AsyncLocalStorage } from "node:async_hooks";
 import { randomUUID } from "node:crypto";
 import type { Decision, Policy } from "./policy/types.js";
 import type { ToolArgs } from "./paypal.js";
 import type { HttpCall } from "./trace.js";
+import { seedEmails, type Email } from "./demo/inbox.js";
 
-// In-memory store. Fine for a hackathon demo; swap for SQLite/Postgres to persist.
+// In-memory store, one workspace per signed-in visitor so judges trying the hosted demo at the same
+// time don't see (or reset) each other's activity. Swap for SQLite/Postgres to persist.
 
 export type AuditStatus = "executed" | "blocked" | "pending_approval" | "approved" | "rejected" | "failed";
 
@@ -56,20 +59,86 @@ export interface Approval {
   resolvedAt?: string;
 }
 
-export const audit: AuditEntry[] = [];
-export const approvals: Approval[] = [];
-export const policies: Policy[] = [];
+export interface Workspace {
+  id: string;
+  audit: AuditEntry[];
+  approvals: Approval[];
+  policies: Policy[];
+  // Turning guardrails off lets the demo show what an unprotected agent does.
+  settings: { guardrails: boolean };
+  inbox: Email[];
+  /** Chat transcripts by chat session id (Anthropic message params, owned by agent.ts). */
+  chats: Map<string, unknown[]>;
+  /** Timestamps of Claude-backed agent runs, for the hourly budget. */
+  agentRuns: number[];
+  lastSeen: number;
+}
 
-// Turning guardrails off lets the demo show what an unprotected agent does.
-export const settings = { guardrails: true };
+const MAX_WORKSPACES = 300;
+const IDLE_MS = 12 * 60 * 60 * 1000; // matches the session lifetime
+const workspaces = new Map<string, Workspace>();
+const current = new AsyncLocalStorage<Workspace>();
 
 export function newId(): string {
   return randomUUID();
 }
 
+function createWorkspace(id: string): Workspace {
+  const w: Workspace = {
+    id,
+    audit: [],
+    approvals: [],
+    policies: [],
+    settings: { guardrails: true },
+    inbox: seedEmails(),
+    chats: new Map(),
+    agentRuns: [],
+    lastSeen: Date.now(),
+  };
+  for (const p of SEED) w.policies.push(makePolicy(p));
+  return w;
+}
+
+/** The workspace for a session, created on first use. Idle and least-recently-used ones are dropped. */
+function workspaceFor(id: string): Workspace {
+  let w = workspaces.get(id);
+  if (!w) {
+    const now = Date.now();
+    for (const [key, ws] of workspaces) if (now - ws.lastSeen > IDLE_MS) workspaces.delete(key);
+    if (workspaces.size >= MAX_WORKSPACES) {
+      const oldest = [...workspaces.values()].sort((a, b) => a.lastSeen - b.lastSeen)[0];
+      workspaces.delete(oldest.id);
+    }
+    w = createWorkspace(id);
+    workspaces.set(id, w);
+  }
+  w.lastSeen = Date.now();
+  return w;
+}
+
+/** Runs `fn` (and everything it awaits) against the given session's workspace. */
+export function inWorkspace<T>(sessionId: string, fn: () => T): T {
+  return current.run(workspaceFor(sessionId), fn);
+}
+
+/** The current visitor's workspace. Only valid inside a request (or `inWorkspace`). */
+export function ws(): Workspace {
+  const w = current.getStore();
+  if (!w) throw new Error("No demo workspace for this request");
+  return w;
+}
+
+export function activeWorkspaces(): number {
+  return workspaces.size;
+}
+
+function makePolicy(p: Omit<Policy, "id" | "createdAt" | "enabled"> & { enabled?: boolean }): Policy {
+  return { ...p, id: newId(), enabled: p.enabled ?? true, createdAt: new Date().toISOString() };
+}
+
 export function addPolicy(p: Omit<Policy, "id" | "createdAt" | "enabled"> & { enabled?: boolean }): Policy {
-  const policy: Policy = { ...p, id: newId(), enabled: p.enabled ?? true, createdAt: new Date().toISOString() };
-  policies.push(policy);
+  const policy = makePolicy(p);
+  ws().policies.push(policy);
   return policy;
 }
 
@@ -111,16 +180,12 @@ const SEED: Parameters<typeof addPolicy>[0][] = [
   },
 ];
 
-function seedPolicies() {
-  for (const p of SEED) addPolicy(p);
-}
-seedPolicies();
-
-/** Clears all activity and restores the seeded policies, for retakes of the demo. */
-export function resetStore() {
-  audit.length = 0;
-  approvals.length = 0;
-  policies.length = 0;
-  seedPolicies();
-  settings.guardrails = true;
+/**
+ * Clears this visitor's activity and restores the seeded policies and inbox, for retakes of the
+ * demo. The agent budget is kept, so resetting can't be used to get more Claude runs.
+ */
+export function resetWorkspace() {
+  const w = ws();
+  const fresh = createWorkspace(w.id);
+  Object.assign(w, { ...fresh, agentRuns: w.agentRuns });
 }

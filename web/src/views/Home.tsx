@@ -41,7 +41,7 @@ const CAPTIONS: Record<AuditStatus, string> = {
   pending_approval: "Waiting on your sign-off",
 };
 
-export function humanize(tool: string): string {
+function humanize(tool: string): string {
   const s = tool.replace(/_/g, " ");
   return s.charAt(0).toUpperCase() + s.slice(1);
 }

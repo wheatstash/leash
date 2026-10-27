@@ -1,11 +1,11 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import fs from "node:fs";
-import cors from "cors";
 import express, { type NextFunction, type Request, type Response } from "express";
 import { execSync } from "node:child_process";
 import { chat, claudeLive, handleEmail } from "./agent.js";
-import { inbox, resetInbox } from "./demo/inbox.js";
+import { checkCredentials, currentUser, issueToken, loginRateLimited, requireAuth } from "./auth.js";
+import { budgetStatus, chargeAgentRun } from "./budget.js";
 import { loadSeededCaptures } from "./demo/orders.js";
 import { config } from "./config.js";
 import { guardedCall, resolveApproval } from "./gateway.js";
@@ -13,12 +13,38 @@ import { spendSummary } from "./policy/engine.js";
 import { parsePolicy } from "./policy/parser.js";
 import { PolicyRuleSchema } from "./policy/types.js";
 import { isReadOnly, paypalTools } from "./paypal.js";
-import { addPolicy, approvals, audit, policies, resetStore, settings } from "./store.js";
+import { activeWorkspaces, addPolicy, resetWorkspace, ws } from "./store.js";
 import { packageVersion, paypalLive } from "./trace.js";
 
 const app = express();
-app.use(cors());
-app.use(express.json({ limit: "1mb" }));
+// Render (and most hosts) sit behind a proxy; trust it so req.ip is the visitor, not the proxy.
+app.set("trust proxy", 1);
+app.use(express.json({ limit: "100kb" }));
+
+// Longest chat message or plain-English rule we'll send to Claude.
+const MAX_CHAT_CHARS = 2000;
+const MAX_RULE_CHARS = 500;
+
+// Unauthenticated liveness probe for the host's health checks.
+app.get("/api/health", (_req, res) => res.json({ ok: true }));
+
+// Demo sign-in. Everything else under /api requires a session.
+app.post("/api/auth/login", (req, res) => {
+  if (loginRateLimited(req.ip ?? "unknown")) return void res.status(429).json({ error: "Too many attempts. Try again in a minute." });
+  const { email = "", password = "" } = (req.body ?? {}) as { email?: string; password?: string };
+  if (!checkCredentials(String(email), String(password))) return void res.status(401).json({ error: "Those aren't the demo credentials." });
+  res.json({ token: issueToken(config.auth.email), user: { email: config.auth.email } });
+});
+app.get("/api/auth/me", (req, res) => {
+  const email = currentUser(req);
+  if (!email) return void res.status(401).json({ error: "Not signed in" });
+  res.json({ email });
+});
+// The sign-in screen shows the demo credentials so judges can get straight in.
+app.get("/api/auth/demo", (_req, res) => {
+  res.json(config.auth.showCredentials ? { email: config.auth.email, password: config.auth.password } : {});
+});
+app.use("/api", requireAuth);
 
 app.get("/api/status", (_req, res) => {
   res.json({
@@ -57,6 +83,8 @@ app.get("/api/stack", (_req, res) => {
     },
     toolkit: { version: versions.toolkit, tools: paypalTools.length },
     claude: { model: config.anthropic.model, effort: config.anthropic.effort, sdkVersion: versions.anthropicSdk, ...claudeLive },
+    budget: budgetStatus(),
+    visitors: activeWorkspaces(),
     ui: { agGrid: versions.agGrid, react: versions.react },
     host: {
       onRender: process.env.RENDER === "true",
@@ -80,16 +108,20 @@ app.get("/api/tools", (_req, res) => {
 app.post("/api/chat", async (req, res) => {
   const { sessionId, message } = req.body as { sessionId?: string; message?: string };
   if (!message?.trim()) return void res.status(400).json({ error: "message is required" });
+  if (message.length > MAX_CHAT_CHARS) return void res.status(400).json({ error: `Keep messages under ${MAX_CHAT_CHARS} characters.` });
+  chargeAgentRun();
   res.json(await chat(sessionId, message));
 });
 
-// Lets the console (or any other agent) call a PayPal tool through the same firewall.
+// Lets the console (or any other agent) call a PayPal tool through the same firewall. Off on the
+// hosted demo: it skips the agent budget, so visitors could otherwise drain the shared sandbox data.
 app.post("/api/tools/:name", async (req, res) => {
+  if (!config.allowDirectTools) return void res.status(403).json({ error: "Direct tool calls are disabled on this demo. Use the inbox or chat." });
   res.json(await guardedCall(req.params.name, req.body ?? {}, "console"));
 });
 
-app.get("/api/audit", (_req, res) => res.json(audit));
-app.get("/api/approvals", (_req, res) => res.json(approvals));
+app.get("/api/audit", (_req, res) => res.json(ws().audit));
+app.get("/api/approvals", (_req, res) => res.json(ws().approvals));
 app.get("/api/spend", (_req, res) => res.json(spendSummary()));
 
 app.post("/api/approvals/:id/:decision", async (req, res) => {
@@ -98,18 +130,20 @@ app.post("/api/approvals/:id/:decision", async (req, res) => {
   res.json(await resolveApproval(id, decision === "approve"));
 });
 
-app.get("/api/settings", (_req, res) => res.json(settings));
+app.get("/api/settings", (_req, res) => res.json(ws().settings));
 app.post("/api/settings", (req, res) => {
+  const { settings } = ws();
   if (typeof req.body.guardrails === "boolean") settings.guardrails = req.body.guardrails;
   res.json(settings);
 });
 
-app.get("/api/inbox", (_req, res) => res.json(inbox));
+app.get("/api/inbox", (_req, res) => res.json(ws().inbox));
 
 app.post("/api/inbox/:id/handle", async (req, res) => {
-  const email = inbox.find((e) => e.id === req.params.id);
+  const email = ws().inbox.find((e) => e.id === req.params.id);
   if (!email) return void res.status(404).json({ error: "Email not found" });
   if (email.status === "working") return void res.status(409).json({ error: "Already being handled" });
+  chargeAgentRun();
   email.status = "working";
   try {
     const reply = await handleEmail(email);
@@ -122,16 +156,17 @@ app.post("/api/inbox/:id/handle", async (req, res) => {
 
 // Puts everything back to the starting state between demo takes.
 app.post("/api/demo/reset", (_req, res) => {
-  resetStore();
-  resetInbox();
+  resetWorkspace();
   res.status(204).end();
 });
 
-app.get("/api/policies", (_req, res) => res.json(policies));
+app.get("/api/policies", (_req, res) => res.json(ws().policies));
 
 app.post("/api/policies/parse", async (req, res) => {
   const { text } = req.body as { text?: string };
   if (!text?.trim()) return void res.status(400).json({ error: "text is required" });
+  if (text.length > MAX_RULE_CHARS) return void res.status(400).json({ error: `Keep rules under ${MAX_RULE_CHARS} characters.` });
+  chargeAgentRun();
   res.json({ description: text, ...(await parsePolicy(text)) });
 });
 
@@ -142,13 +177,14 @@ app.post("/api/policies", (req, res) => {
 });
 
 app.patch("/api/policies/:id", (req, res) => {
-  const policy = policies.find((p) => p.id === req.params.id);
+  const policy = ws().policies.find((p) => p.id === req.params.id);
   if (!policy) return void res.status(404).json({ error: "Policy not found" });
   if (typeof req.body.enabled === "boolean") policy.enabled = req.body.enabled;
   res.json(policy);
 });
 
 app.delete("/api/policies/:id", (req, res) => {
+  const { policies } = ws();
   const i = policies.findIndex((p) => p.id === req.params.id);
   if (i === -1) return void res.status(404).json({ error: "Policy not found" });
   policies.splice(i, 1);
@@ -163,6 +199,13 @@ if (fs.existsSync(webDist)) {
 }
 
 app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+  // Expected refusals (e.g. the agent budget) carry their own status; everything else is a 500.
+  const status = (err as { status?: number }).status;
+  if (status && status < 500) {
+    const retry = (err as { retryAfterSec?: number }).retryAfterSec;
+    if (retry) res.set("Retry-After", String(retry));
+    return void res.status(status).json({ error: (err as Error).message });
+  }
   console.error(err);
   res.status(500).json({ error: err instanceof Error ? err.message : "Internal error" });
 });

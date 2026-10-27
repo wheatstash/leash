@@ -1,11 +1,14 @@
+# Render Blueprint: one Node web service that serves the API and the built console.
+# Secrets marked `sync: false` are entered in the Render dashboard on first deploy.
 services:
   - type: web
     name: leash
     runtime: node
-    plan: free
+    # Starter keeps the demo awake through judging (the free plan sleeps after 15 idle minutes).
+    plan: starter
     buildCommand: npm ci --include=dev && npm run build
     startCommand: npm start
-    healthCheckPath: /api/status
+    healthCheckPath: /api/health
     envVars:
       - key: NODE_VERSION
         value: "22"
@@ -17,3 +20,24 @@ services:
         sync: false
       - key: ANTHROPIC_MODEL
         value: claude-opus-5-5
+      - key: ANTHROPIC_EFFORT
+        value: medium
+      # Contents of server/data/demo-orders.json after `npm run seed` (real sandbox captures to refund).
+      - key: DEMO_CAPTURES
+        sync: false
+      - key: DEMO_EMAIL
+        value: judge@example.com
+      - key: DEMO_PASSWORD
+        value: leash-demo-2026
+      - key: DEMO_SHOW_CREDENTIALS
+        value: "true"
+      - key: AUTH_SECRET
+        generateValue: true
+      # Direct tool calls skip the agent budget; keep them off on the public demo.
+      - key: ALLOW_DIRECT_TOOLS
+        value: "false"
+      # Claude-backed agent runs per visitor per hour, and across all visitors per UTC day.
+      - key: AGENT_RUNS_PER_HOUR
+        value: "30"
+      - key: AGENT_RUNS_PER_DAY
+        value: "600"

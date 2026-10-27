@@ -32,10 +32,14 @@ export function seededCapturesPath(): string {
   return DATA_FILE;
 }
 
-/** Real sandbox captures written by `npm run seed`, or null if it hasn't run. */
+/**
+ * Real sandbox captures written by `npm run seed`, or null if it hasn't run. On a host without
+ * that file (e.g. Render), paste the file's contents into the DEMO_CAPTURES env var instead.
+ */
 export function loadSeededCaptures(): Record<string, SeededCapture> | null {
   try {
-    return JSON.parse(fs.readFileSync(DATA_FILE, "utf8"));
+    const fromEnv = process.env.DEMO_CAPTURES?.trim();
+    return JSON.parse(fromEnv || fs.readFileSync(DATA_FILE, "utf8"));
   } catch {
     return null;
   }

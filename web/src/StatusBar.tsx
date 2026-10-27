@@ -51,11 +51,12 @@ export function StatusBar() {
       <Seg
         dot={s.claude.calls ? "ok" : "idle"}
         label="Claude"
-        title={`Anthropic Messages API via @anthropic-ai/sdk ${s.claude.sdkVersion}, ${s.claude.model} at ${s.claude.effort} effort with adaptive thinking. ${s.claude.calls} calls, ${s.claude.tokens.input.toLocaleString()} input / ${s.claude.tokens.output.toLocaleString()} output tokens (${s.claude.tokens.cacheRead.toLocaleString()} from cache).`}
+        title={`Anthropic Messages API via @anthropic-ai/sdk ${s.claude.sdkVersion}, ${s.claude.model} at ${s.claude.effort} effort with adaptive thinking. ${s.claude.calls} calls, ${s.claude.tokens.input.toLocaleString()} input / ${s.claude.tokens.output.toLocaleString()} output tokens (${s.claude.tokens.cacheRead.toLocaleString()} from cache). Agent budget: ${s.budget.hour.used} of ${s.budget.hour.limit} runs used this hour by you; ${s.budget.day.used} of ${s.budget.day.limit} today across all visitors.`}
       >
         {short(s.claude.model)}
         {servedBy}
         {s.claude.lastMs !== null ? ` · last ${(s.claude.lastMs / 1000).toFixed(1)} s` : " · idle"}
+        {` · ${Math.max(0, s.budget.hour.limit - s.budget.hour.used)} runs left this hour`}
       </Seg>
 
       <Seg label="AG Grid" title={`AG Grid Community ${s.ui.agGrid} renders the audit log, approvals, policies and spend tables, live-updated every 2 seconds.`}>
@@ -66,9 +67,10 @@ export function StatusBar() {
         dot={s.host.onRender ? "ok" : "idle"}
         label={s.host.onRender ? "Render" : "Host"}
         title={
-          s.host.onRender
+          (s.host.onRender
             ? `Render web service ${s.host.service ?? ""}${s.host.instance ? ` (instance ${s.host.instance})` : ""}, built from ${s.host.branch ?? "main"} @ ${s.host.commit}. Node ${s.host.node}, Express ${s.host.express}.`
-            : `Running locally on Node ${s.host.node}, Express ${s.host.express}. Commit ${s.host.commit ?? "unknown"}.`
+            : `Running locally on Node ${s.host.node}, Express ${s.host.express}. Commit ${s.host.commit ?? "unknown"}.`) +
+          ` ${s.visitors} active demo workspace${s.visitors === 1 ? "" : "s"}: each sign-in gets its own.`
         }
       >
         {s.host.onRender ? s.host.service ?? "web service" : "local dev"}
