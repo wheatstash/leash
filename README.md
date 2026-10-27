@@ -11,6 +11,15 @@
 - **Hosted demo:** _coming soon (Render URL)_. Nothing to install; the PayPal sandbox and Claude are already configured.
 - **Run it yourself:** follow [Run it locally](#run-it-locally). You need your own free [PayPal sandbox app](https://developer.paypal.com/dashboard/applications/sandbox) and an [Anthropic API key](https://console.anthropic.com). Without PayPal credentials the app still runs in mock mode.
 - **Demo script:** see [Try the demo flow](#try-the-demo-flow). Use **Reset demo** to start over.
+- **See the tech on screen:** click any row in the audit log (or any tool chip in the inbox, chat or recent activity) to open its **call trace**:
+  1. The Claude response that chose the tool: model, request id, latency, tokens and the raw `tool_use` input.
+  2. How every Leash rule judged the call.
+  3. The PayPal Agent Toolkit tool that ran.
+  4. Each real PayPal REST request it made, with status, latency and `PayPal-Debug-Id`; the OAuth token is redacted.
+
+  **X-ray mode** (header toggle, or press **X**) outlines each part of the console and labels the tech behind it, color-coded: PayPal Agent Toolkit, Claude, Leash, AG Grid, Render. Open `/?xray=1` to start with it on.
+
+  The **status bar** at the bottom shows live facts about the stack: the PayPal sandbox token's time left, the Agent Toolkit version and tool count, Claude's last latency, the AG Grid version, and the deployed commit.
 
 ## How it works
 
@@ -77,6 +86,7 @@ Then:
 1. Open **Approvals** and approve Diego's refund. It runs, and the **Audit log** records it.
 2. Click **Reset demo** (this also turns guardrails back on), flip **Guardrails off**, and handle Sam's email. The $1,450 refund goes straight through. This is the contrast to show.
 3. On **Policies**, type *"Don't let the agent create invoices over $1,000"*, click **Translate**, then **Save rule**.
+4. Open the **Audit log** and click Priya's refund to see the full trace, down to the `POST /v2/payments/captures/{id}/refund` that PayPal answered. Then click Sam's blocked refund: the trace stops at Leash and no request reaches PayPal.
 
 **Reset demo** clears all activity, restores the inbox and seeded policies, and turns guardrails back on, so you can do another take.
 
@@ -94,12 +104,12 @@ Refunds in sandbox mode are real sandbox refunds, so they use up the seeded paym
 | **PayPal REST APIs (sandbox)** | The APIs the toolkit calls when a request is allowed or approved. |
 | **Claude Opus 5.5** (Anthropic API, `@anthropic-ai/sdk`) | (1) The ops agent's tool-use loop; (2) translating plain-English rules into structured policies. |
 | **AG Grid Community** | Approvals queue, audit log, policies and spend tables in the console. |
-| **Animated SVG mascot** | Hand-drawn robot on the home page that blinks, waves, follows the cursor and reacts to each firewall decision (hops with ^ ^ eyes when a call runs, tilts its head when one is held, shakes it with > < eyes when one is blocked). |
+| **Animated SVG mascot** | Leash's robot guard dog, with a PayPal medallion on its collar. It wags, blinks, offers a paw, follows the cursor, and reacts to each firewall decision: it hops with ^ ^ eyes and a fast wag when a call runs, tilts its head when one is held, and growls with ears back and red > < eyes when one is blocked. |
 | **Render** | Hosting. |
 | **Claude Code** | AI coding assistant used during development. |
 
 ### Third-party software
-Uses open-source packages under their own licenses, including `@paypal/agent-toolkit` (Apache-2.0), AG Grid Community (MIT), React (MIT), Express (MIT) and the Anthropic TypeScript SDK (MIT). The PayPal monogram on the mascot's chest is PayPal's trademark, used to show the agent operates on PayPal for this PayPal hackathon. All demo customers, emails and the shop are fictional; emails use reserved `example.com` / `example.net` domains.
+Uses open-source packages under their own licenses, including `@paypal/agent-toolkit` (Apache-2.0), AG Grid Community (MIT), React (MIT), Express (MIT) and the Anthropic TypeScript SDK (MIT). The PayPal monogram on the mascot's collar medallion is PayPal's trademark, used to show the agent operates on PayPal for this PayPal hackathon. All demo customers, emails and the shop are fictional; emails use reserved `example.com` / `example.net` domains.
 
 ## Project layout
 
@@ -115,7 +125,9 @@ server/src/
   scripts/          seed-sandbox.ts: pays for demo orders in the PayPal sandbox
 web/src/
   App.tsx           Layout, tabs, polling
-  Bot2D.tsx         Animated SVG mascot: blinks, waves, follows the cursor, reacts to firewall decisions
+  Mascot.tsx        Animated SVG robot dog: wags, blinks, offers a paw, reacts to firewall decisions
+  StatusBar.tsx     Live stack facts from /api/stack
+  xray.ts           X-ray mode labels (which tech powers each part of the UI)
   views/            Home, Inbox, Chat, Approvals, Audit, Policies, Spend
 ```
 

@@ -3,7 +3,8 @@ import { fileURLToPath } from "node:url";
 import fs from "node:fs";
 import cors from "cors";
 import express, { type NextFunction, type Request, type Response } from "express";
-import { chat, handleEmail } from "./agent.js";
+import { execSync } from "node:child_process";
+import { chat, claudeLive, handleEmail } from "./agent.js";
 import { inbox, resetInbox } from "./demo/inbox.js";
 import { loadSeededCaptures } from "./demo/orders.js";
 import { config } from "./config.js";
@@ -13,6 +14,7 @@ import { parsePolicy } from "./policy/parser.js";
 import { PolicyRuleSchema } from "./policy/types.js";
 import { isReadOnly, paypalTools } from "./paypal.js";
 import { addPolicy, approvals, audit, policies, resetStore, settings } from "./store.js";
+import { packageVersion, paypalLive } from "./trace.js";
 
 const app = express();
 app.use(cors());
@@ -25,6 +27,49 @@ app.get("/api/status", (_req, res) => {
     approverName: config.approverName,
     toolCount: paypalTools.length,
     sandboxSeeded: loadSeededCaptures() !== null,
+  });
+});
+
+// Where this build came from: Render sets RENDER_GIT_COMMIT; locally we ask git.
+const commit =
+  process.env.RENDER_GIT_COMMIT ??
+  (() => {
+    try {
+      return execSync("git rev-parse HEAD", { stdio: ["ignore", "pipe", "ignore"] }).toString().trim();
+    } catch {
+      return null;
+    }
+  })();
+const versions = {
+  toolkit: packageVersion("@paypal/agent-toolkit", "@paypal/agent-toolkit/ai-sdk"),
+  anthropicSdk: packageVersion("@anthropic-ai/sdk"),
+  agGrid: packageVersion("ag-grid-community"),
+  react: packageVersion("react"),
+  express: packageVersion("express"),
+};
+
+// Live facts for the console's stack status bar: real connections, versions and the deployed build.
+app.get("/api/stack", (_req, res) => {
+  res.json({
+    paypal: {
+      mode: config.paypal.mock ? "mock" : "sandbox",
+      ...paypalLive,
+    },
+    toolkit: { version: versions.toolkit, tools: paypalTools.length },
+    claude: { model: config.anthropic.model, effort: config.anthropic.effort, sdkVersion: versions.anthropicSdk, ...claudeLive },
+    ui: { agGrid: versions.agGrid, react: versions.react },
+    host: {
+      onRender: process.env.RENDER === "true",
+      service: process.env.RENDER_SERVICE_NAME ?? null,
+      url: process.env.RENDER_EXTERNAL_URL ?? null,
+      instance: process.env.RENDER_INSTANCE_ID ?? null,
+      branch: process.env.RENDER_GIT_BRANCH ?? null,
+      commit,
+      repo: "https://github.com/wheatstash/leash",
+      node: process.version,
+      express: versions.express,
+      uptimeSec: Math.round(process.uptime()),
+    },
   });
 });
 

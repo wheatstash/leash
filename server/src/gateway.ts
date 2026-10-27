@@ -1,7 +1,12 @@
 import { extractAmount } from "./policy/amount.js";
 import { evaluate } from "./policy/engine.js";
+import { config } from "./config.js";
 import { paypalToolsByName, type ToolArgs } from "./paypal.js";
-import { approvals, audit, newId, settings, type Approval, type AuditEntry } from "./store.js";
+import { approvals, audit, newId, settings, type Approval, type AuditEntry, type ClaudeTrace } from "./store.js";
+import { httpTrace, packageVersion, type HttpCall } from "./trace.js";
+
+const TOOLKIT = "@paypal/agent-toolkit";
+const toolkitVersion = packageVersion(TOOLKIT, `${TOOLKIT}/ai-sdk`);
 
 export interface GatewayResult {
   status: AuditEntry["status"];
@@ -36,8 +41,12 @@ function paypalError(result: unknown): string | null {
 
 async function run(entry: AuditEntry): Promise<void> {
   const tool = paypalToolsByName.get(entry.tool)!;
+  const calls: HttpCall[] = [];
+  entry.trace.paypal = { mock: config.paypal.mock, ms: 0, calls };
+  const start = performance.now();
   try {
-    entry.result = await tool.execute(entry.args);
+    // Every HTTP request the toolkit makes inside this context is recorded on the trace.
+    entry.result = await httpTrace.run(calls, () => tool.execute(entry.args));
     const error = paypalError(entry.result);
     if (error) {
       entry.status = "failed";
@@ -47,20 +56,29 @@ async function run(entry: AuditEntry): Promise<void> {
     entry.status = "failed";
     entry.error = errorMessage(err);
   }
+  entry.trace.paypal.ms = Math.round(performance.now() - start);
 }
 
 /**
  * The single choke point between any agent and PayPal. Every tool call is
  * evaluated against policy, logged, and only then executed (or not).
  */
-export async function guardedCall(toolName: string, args: ToolArgs, source: AuditEntry["source"] = "agent"): Promise<GatewayResult> {
-  if (!paypalToolsByName.has(toolName)) {
+export async function guardedCall(
+  toolName: string,
+  args: ToolArgs,
+  source: AuditEntry["source"] = "agent",
+  claude?: ClaudeTrace,
+): Promise<GatewayResult> {
+  const tool = paypalToolsByName.get(toolName);
+  if (!tool) {
     throw new Error(`Unknown PayPal tool: ${toolName}`);
   }
 
+  const policyStart = performance.now();
   const decision = settings.guardrails
     ? evaluate(toolName, args)
-    : { action: "allow" as const, reason: "Guardrails off: no policy checked", policyIds: [], amount: extractAmount(args) };
+    : { action: "allow" as const, reason: "Guardrails off: no policy checked", policyIds: [], amount: extractAmount(args), checks: [] };
+  const policyMs = performance.now() - policyStart;
   const entry: AuditEntry = {
     id: newId(),
     timestamp: new Date().toISOString(),
@@ -72,6 +90,11 @@ export async function guardedCall(toolName: string, args: ToolArgs, source: Audi
     policyIds: decision.policyIds,
     status: "executed",
     source,
+    trace: {
+      claude,
+      policy: { guardrails: settings.guardrails, ms: Math.round(policyMs * 100) / 100, checks: decision.checks },
+      toolkit: { package: TOOLKIT, version: toolkitVersion, tool: toolName, description: tool.description.trim().split("\n")[0].slice(0, 200) },
+    },
   };
   audit.unshift(entry);
 

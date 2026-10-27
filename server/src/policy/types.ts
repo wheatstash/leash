@@ -40,4 +40,14 @@ export interface Decision {
   reason: string;
   policyIds: string[];
   amount: number | null;
+  /** Every rule and how it judged this call, for the trace inspector. */
+  checks: {
+    policyId: string;
+    name: string;
+    action: PolicyAction;
+    enabled: boolean;
+    applies: boolean;
+    triggered: boolean;
+    why: string | null;
+  }[];
 }

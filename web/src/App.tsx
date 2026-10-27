@@ -1,8 +1,11 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { api } from "./api";
 import { Icon } from "./Icons";
 import { Sidebar, type Page } from "./Sidebar";
+import { StatusBar } from "./StatusBar";
+import { TraceContext } from "./traceContext";
 import { usePoll } from "./usePoll";
+import { TECH_NAMES, xray, type Tech } from "./xray";
 import { ApprovalsView } from "./views/ApprovalsView";
 import { AuditView } from "./views/AuditView";
 import { ChatPanel } from "./views/ChatPanel";
@@ -10,6 +13,7 @@ import { Home } from "./views/Home";
 import { InboxPanel } from "./views/InboxPanel";
 import { PoliciesView } from "./views/PoliciesView";
 import { SpendView } from "./views/SpendView";
+import { TraceDrawer } from "./views/TraceDrawer";
 
 const TITLES: Record<Page, string> = {
   home: "Maria's Clay & Linen",
@@ -23,6 +27,34 @@ const TITLES: Record<Page, string> = {
 
 export function App() {
   const [page, setPage] = useState<Page>("home");
+  const [traceId, setTraceId] = useState<string | null>(null);
+  const closeTrace = useCallback(() => setTraceId(null), []);
+  const [xrayOn, setXrayOn] = useState(() => {
+    // ?xray=1 opens the console with X-ray on, e.g. in a link for judges.
+    if (new URLSearchParams(window.location.search).has("xray")) return true;
+    try {
+      return localStorage.getItem("leash-xray") === "1";
+    } catch {
+      return false;
+    }
+  });
+
+  // X toggles X-ray anywhere except while typing.
+  useEffect(() => {
+    try {
+      localStorage.setItem("leash-xray", xrayOn ? "1" : "0");
+    } catch {
+      // storage unavailable; the toggle still works for this visit
+    }
+    const onKey = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement;
+      if (e.key.toLowerCase() !== "x" || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (el.closest("input, textarea, select, [contenteditable]")) return;
+      setXrayOn((v) => !v);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [xrayOn]);
   const status = usePoll(api.status, 30000);
   const settings = usePoll(api.settings, 5000);
   const inbox = usePoll(api.inbox);
@@ -61,88 +93,112 @@ export function App() {
   }
 
   return (
-    <div className={`shell ${guardrails ? "" : "shell-unguarded"}`}>
-      <Sidebar page={page} onNavigate={setPage} onCreate={createPolicy} pending={pending} />
+    <TraceContext.Provider value={setTraceId}>
+      <div className={`shell ${guardrails ? "" : "shell-unguarded"} ${xrayOn ? "xray" : ""}`}>
+        <Sidebar page={page} onNavigate={setPage} onCreate={createPolicy} pending={pending} />
 
-      <div className="main">
-        <header className="header">
-          <h1 className="header-title">{TITLES[page]}</h1>
-          <div className="header-actions">
-            {status.data && (
-              <span className={`pill ${status.data.paypalMode === "mock" ? "pill-warn" : "pill-ok"}`}>
-                PayPal {status.data.paypalMode}
-                {status.data.paypalMode === "sandbox" && !status.data.sandboxSeeded && " · not seeded"}
-              </span>
+        <div className="main">
+          <header className="header">
+            <h1 className="header-title">{TITLES[page]}</h1>
+            <div className="header-actions">
+              {status.data && (
+                <span className={`pill ${status.data.paypalMode === "mock" ? "pill-warn" : "pill-ok"}`}>
+                  PayPal {status.data.paypalMode}
+                  {status.data.paypalMode === "sandbox" && !status.data.sandboxSeeded && " · not seeded"}
+                </span>
+              )}
+              {status.error && <span className="pill pill-bad">API offline</span>}
+              <button
+                className={`xray-toggle ${xrayOn ? "xray-toggle-on" : ""}`}
+                aria-pressed={xrayOn}
+                onClick={() => setXrayOn((v) => !v)}
+                title="Show the tech behind each part of the console (X)"
+              >
+                <Icon.Scan size={16} /> X-ray
+              </button>
+              <button
+                className={`switch ${guardrails ? "switch-on" : "switch-off"}`}
+                role="switch"
+                aria-checked={guardrails}
+                onClick={toggleGuardrails}
+              >
+                <span className="switch-knob" />
+                Guardrails {guardrails ? "on" : "off"}
+              </button>
+              <button className="bell" onClick={() => setPage("approvals")} aria-label={`${pending} approvals waiting`}>
+                <Icon.Bell size={22} />
+                <span className="bell-count">{pending}</span>
+              </button>
+              <span className="divider" aria-hidden />
+              <span className="avatar" title="Maria (shop owner)">MC</span>
+            </div>
+          </header>
+
+          {xrayOn && (
+            <div className="xray-legend" role="note">
+              <span className="xray-legend-title">X-ray</span>
+              {(Object.keys(TECH_NAMES) as Tech[]).map((t) => (
+                <span key={t} className="xray-key" data-xray-tech={t}>
+                  {TECH_NAMES[t]}
+                </span>
+              ))}
+              <span className="muted">Click any audit row for the full call trace. Press X to hide.</span>
+            </div>
+          )}
+
+          {!guardrails && (
+            <div className="banner">Guardrails are off. The agent can move money with no limits or approvals.</div>
+          )}
+
+          <main className="content">
+            {page === "home" && (
+              <Home
+                status={status.data}
+                guardrails={guardrails}
+                approvals={approvals.data ?? []}
+                audit={audit.data ?? []}
+                spend={spend.data}
+                inbox={inbox.data ?? []}
+                onNavigate={setPage}
+                onToggleGuardrails={toggleGuardrails}
+                onReset={resetDemo}
+                onChange={refreshAll}
+              />
             )}
-            {status.error && <span className="pill pill-bad">API offline</span>}
-            <button
-              className={`switch ${guardrails ? "switch-on" : "switch-off"}`}
-              role="switch"
-              aria-checked={guardrails}
-              onClick={toggleGuardrails}
-            >
-              <span className="switch-knob" />
-              Guardrails {guardrails ? "on" : "off"}
-            </button>
-            <button className="bell" onClick={() => setPage("approvals")} aria-label={`${pending} approvals waiting`}>
-              <Icon.Bell size={22} />
-              <span className="bell-count">{pending}</span>
-            </button>
-            <span className="divider" aria-hidden />
-            <span className="avatar" title="Maria (shop owner)">MC</span>
-          </div>
-        </header>
 
-        {!guardrails && (
-          <div className="banner">Guardrails are off. The agent can move money with no limits or approvals.</div>
-        )}
+            {page === "inbox" && (
+              <div className="split">
+                <section className="panel" {...xray("claude", "Claude agent loop · tool use over 47 PayPal Agent Toolkit tools, every call through Leash")}>
+                  <InboxPanel emails={inbox.data ?? []} onActivity={refreshAll} />
+                </section>
+                <section className="panel panel-pad">
+                  <h3 className="section-title">Live activity</h3>
+                  <AuditView rows={audit.data ?? []} />
+                </section>
+              </div>
+            )}
 
-        <main className="content">
-          {page === "home" && (
-            <Home
-              status={status.data}
-              guardrails={guardrails}
-              approvals={approvals.data ?? []}
-              audit={audit.data ?? []}
-              spend={spend.data}
-              inbox={inbox.data ?? []}
-              onNavigate={setPage}
-              onToggleGuardrails={toggleGuardrails}
-              onReset={resetDemo}
-              onChange={refreshAll}
-            />
-          )}
+            {page === "chat" && (
+              <div className="split">
+                <section className="panel" {...xray("claude", "Claude agent loop · tool use over 47 PayPal Agent Toolkit tools, every call through Leash")}>
+                  <ChatPanel onActivity={refreshAll} />
+                </section>
+                <section className="panel panel-pad">
+                  <h3 className="section-title">Live activity</h3>
+                  <AuditView rows={audit.data ?? []} />
+                </section>
+              </div>
+            )}
 
-          {page === "inbox" && (
-            <div className="split">
-              <section className="panel">
-                <InboxPanel emails={inbox.data ?? []} onActivity={refreshAll} />
-              </section>
-              <section className="panel panel-pad">
-                <h3 className="section-title">Live activity</h3>
-                <AuditView rows={audit.data ?? []} />
-              </section>
-            </div>
-          )}
-
-          {page === "chat" && (
-            <div className="split">
-              <section className="panel">
-                <ChatPanel onActivity={refreshAll} />
-              </section>
-              <section className="panel panel-pad">
-                <h3 className="section-title">Live activity</h3>
-                <AuditView rows={audit.data ?? []} />
-              </section>
-            </div>
-          )}
-
-          {page === "audit" && <section className="panel panel-pad panel-tall"><AuditView rows={audit.data ?? []} /></section>}
-          {page === "approvals" && <section className="panel panel-pad panel-tall"><ApprovalsView rows={approvals.data ?? []} onChange={refreshAll} /></section>}
-          {page === "spend" && <section className="panel panel-pad panel-tall"><SpendView spend={spend.data} /></section>}
-          {page === "policies" && <section className="panel panel-pad panel-tall"><PoliciesView rows={policies.data ?? []} onChange={refreshAll} /></section>}
-        </main>
+            {page === "audit" && <section className="panel panel-pad panel-tall"><AuditView rows={audit.data ?? []} /></section>}
+            {page === "approvals" && <section className="panel panel-pad panel-tall"><ApprovalsView rows={approvals.data ?? []} onChange={refreshAll} /></section>}
+            {page === "spend" && <section className="panel panel-pad panel-tall"><SpendView spend={spend.data} /></section>}
+            {page === "policies" && <section className="panel panel-pad panel-tall"><PoliciesView rows={policies.data ?? []} onChange={refreshAll} /></section>}
+          </main>
+          <StatusBar />
+        </div>
+        <TraceDrawer entry={audit.data?.find((e) => e.id === traceId) ?? null} onClose={closeTrace} />
       </div>
-    </div>
+    </TraceContext.Provider>
   );
 }

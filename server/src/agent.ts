@@ -3,7 +3,7 @@ import { config } from "./config.js";
 import { shopRecordsFor, type Email } from "./demo/inbox.js";
 import { guardedCall, type GatewayResult } from "./gateway.js";
 import { paypalTools, type ToolArgs } from "./paypal.js";
-import { newId } from "./store.js";
+import { newId, type ClaudeTrace } from "./store.js";
 
 const client = new Anthropic();
 
@@ -37,6 +37,15 @@ export interface AgentReply {
   events: ToolEvent[];
 }
 
+/** Live facts about the Claude connection, for the status bar. */
+export const claudeLive = {
+  calls: 0,
+  lastModel: null as string | null,
+  lastMs: null as number | null,
+  lastAt: null as string | null,
+  tokens: { input: 0, output: 0, cacheRead: 0 },
+};
+
 const sessions = new Map<string, Anthropic.Beta.BetaMessageParam[]>();
 const MAX_STEPS = 12;
 
@@ -50,6 +59,7 @@ export async function chat(sessionId: string | undefined, userText: string): Pro
   const texts: string[] = [];
 
   for (let step = 0; step < MAX_STEPS; step++) {
+    const started = performance.now();
     const response = await client.beta.messages.create({
       model: config.anthropic.model,
       max_tokens: 16000,
@@ -62,6 +72,18 @@ export async function chat(sessionId: string | undefined, userText: string): Pro
       betas: ["server-side-fallback-2026-07-01"],
       fallbacks: "default",
     });
+    const latencyMs = Math.round(performance.now() - started);
+    const usage = {
+      input: response.usage.input_tokens,
+      output: response.usage.output_tokens,
+      cacheRead: response.usage.cache_read_input_tokens ?? 0,
+      cacheWrite: response.usage.cache_creation_input_tokens ?? 0,
+    };
+    Object.assign(claudeLive, { calls: claudeLive.calls + 1, lastModel: response.model, lastMs: latencyMs, lastAt: new Date().toISOString() });
+    claudeLive.tokens.input += usage.input;
+    claudeLive.tokens.output += usage.output;
+    claudeLive.tokens.cacheRead += usage.cacheRead;
+    const requestId = (response as { _request_id?: string | null })._request_id ?? null;
 
     // Append the full content (including thinking blocks) to keep history valid.
     messages.push({ role: "assistant", content: response.content });
@@ -81,7 +103,16 @@ export async function chat(sessionId: string | undefined, userText: string): Pro
       toolUses.map(async (use) => {
         const args = (use.input ?? {}) as ToolArgs;
         try {
-          const r = await guardedCall(use.name, args, "agent");
+          const claude: ClaudeTrace = {
+            model: response.model,
+            requestId,
+            toolUseId: use.id,
+            step: step + 1,
+            latencyMs,
+            stopReason: response.stop_reason,
+            usage,
+          };
+          const r = await guardedCall(use.name, args, "agent", claude);
           events.push({ tool: use.name, args, status: r.status, message: r.message, auditId: r.auditId });
           const body = r.status === "executed" ? JSON.stringify(r.result ?? {}) : r.message;
           return {

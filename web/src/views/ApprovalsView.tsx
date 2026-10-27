@@ -4,6 +4,7 @@ import type { ColDef, ICellRendererParams } from "ag-grid-community";
 import { api, money, time, type Approval } from "../api";
 import { gridTheme } from "../grid";
 import { StatusBadge } from "../StatusBadge";
+import { xray } from "../xray";
 
 export function ApprovalsView({ rows, onChange }: { rows: Approval[]; onChange: () => void }) {
   const columns = useMemo<ColDef<Approval>[]>(
@@ -34,7 +35,7 @@ export function ApprovalsView({ rows, onChange }: { rows: Approval[]; onChange: 
   );
 
   return (
-    <div className="grid-wrap">
+    <div className="grid-wrap" {...xray("aggrid", "AG Grid · human-in-the-loop queue; approving runs the held PayPal call")}>
       <AgGridReact<Approval>
         theme={gridTheme}
         rowData={rows}

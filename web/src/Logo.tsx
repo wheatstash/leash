@@ -1,22 +1,25 @@
-// Leash mark: the mascot's head on a leash that runs from its collar to a handle loop.
-export function LogoMark({ size = 30 }: { size?: number }) {
+// Leash mark: the mascot robot dog's head, PayPal collar tag and all, on a leash ending in a handle loop.
+export function LogoMark({ size = 32 }: { size?: number }) {
   return (
-    <svg width={size * 1.25} height={size} viewBox="0 0 40 32" aria-hidden="true">
+    <svg width={(size * 44) / 37} height={size} viewBox="0 0 44 37" aria-hidden="true">
       <defs>
         <linearGradient id="leash-shell" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stopColor="#2a4a7a" />
           <stop offset="1" stopColor="#13233b" />
         </linearGradient>
       </defs>
-      <path d="M15 28.5 C 22 33, 30 31, 33 24" fill="none" stroke="#0062d6" strokeWidth="2.4" strokeLinecap="round" />
-      <ellipse cx="34.5" cy="20.5" rx="3.6" ry="4.4" transform="rotate(20 34.5 20.5)" fill="none" stroke="#0062d6" strokeWidth="2.4" />
-      <line x1="15" y1="6" x2="15" y2="3" stroke="#c9d3e0" strokeWidth="1.6" strokeLinecap="round" />
-      <circle cx="15" cy="2.4" r="1.9" fill="#4cc3f5" />
-      <rect x="2" y="5.5" width="26" height="21" rx="9" fill="url(#leash-shell)" />
-      <rect x="5.5" y="9.5" width="19" height="13" rx="5.5" fill="#0b1628" />
-      <rect x="10" y="13" width="3" height="5.5" rx="1.5" fill="#7fd8ff" />
-      <rect x="17" y="13" width="3" height="5.5" rx="1.5" fill="#7fd8ff" />
-      <rect x="10.5" y="26" width="9" height="3" rx="1.5" fill="#c9d3e0" />
+      <path d="M22 30.5 C 28 34.5, 36 33, 38.5 26" fill="none" stroke="#0062d6" strokeWidth="2.4" strokeLinecap="round" />
+      <ellipse cx="39.6" cy="22.6" rx="3.4" ry="4.2" transform="rotate(20 39.6 22.6)" fill="none" stroke="#0062d6" strokeWidth="2.4" />
+      <rect x="2.5" y="6" width="7" height="17" rx="3.5" transform="rotate(14 6 6)" fill="url(#leash-shell)" stroke="#c9d3e0" strokeWidth="1.1" />
+      <rect x="32.5" y="6" width="7" height="17" rx="3.5" transform="rotate(-14 36 6)" fill="url(#leash-shell)" stroke="#c9d3e0" strokeWidth="1.1" />
+      <rect x="7" y="3" width="28" height="25" rx="11" fill="url(#leash-shell)" stroke="#c9d3e0" strokeWidth="1.2" />
+      <rect x="10.5" y="6.5" width="21" height="10.5" rx="4.5" fill="#0b1628" />
+      <rect x="14.5" y="9" width="3" height="5" rx="1.5" fill="#7fd8ff" />
+      <rect x="24.5" y="9" width="3" height="5" rx="1.5" fill="#7fd8ff" />
+      <rect x="15" y="16.5" width="12" height="8.5" rx="4.2" fill="#3b5f93" />
+      <ellipse cx="21" cy="18.6" rx="2.4" ry="1.6" fill="#0b1628" />
+      <rect x="12" y="28" width="18" height="3.6" rx="1.8" fill="#003087" stroke="#0070e0" strokeWidth="0.8" />
+      <circle cx="21" cy="33.4" r="2.4" fill="#ffffff" stroke="#c9d3e0" strokeWidth="0.8" />
     </svg>
   );
 }

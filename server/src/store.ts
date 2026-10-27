@@ -1,10 +1,32 @@
 import { randomUUID } from "node:crypto";
 import type { Decision, Policy } from "./policy/types.js";
 import type { ToolArgs } from "./paypal.js";
+import type { HttpCall } from "./trace.js";
 
 // In-memory store. Fine for a hackathon demo; swap for SQLite/Postgres to persist.
 
 export type AuditStatus = "executed" | "blocked" | "pending_approval" | "approved" | "rejected" | "failed";
+
+/** The Claude API response that produced a tool call. */
+export interface ClaudeTrace {
+  model: string; // the model that actually served the request
+  requestId: string | null;
+  toolUseId: string;
+  step: number;
+  latencyMs: number;
+  stopReason: string | null;
+  usage: { input: number; output: number; cacheRead: number; cacheWrite: number };
+}
+
+export type PolicyCheck = Decision["checks"][number];
+
+/** Everything that happened to one tool call, end to end, for the trace inspector. */
+export interface Trace {
+  claude?: ClaudeTrace;
+  policy: { guardrails: boolean; ms: number; checks: PolicyCheck[] };
+  toolkit: { package: string; version: string | null; tool: string; description: string };
+  paypal?: { mock: boolean; ms: number; calls: HttpCall[] };
+}
 
 export interface AuditEntry {
   id: string;
@@ -19,6 +41,7 @@ export interface AuditEntry {
   result?: unknown;
   error?: string;
   source: "agent" | "console";
+  trace: Trace;
 }
 
 export interface Approval {

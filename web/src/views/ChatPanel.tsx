@@ -1,6 +1,7 @@
 import { useRef, useState, type FormEvent } from "react";
 import { api, type ChatReply } from "../api";
 import { StatusBadge } from "../StatusBadge";
+import { useOpenTrace } from "../traceContext";
 
 interface Turn {
   role: "user" | "agent";
@@ -15,6 +16,7 @@ const SUGGESTIONS = [
 ];
 
 export function ChatPanel({ onActivity }: { onActivity: () => void }) {
+  const openTrace = useOpenTrace();
   const [turns, setTurns] = useState<Turn[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -66,8 +68,10 @@ export function ChatPanel({ onActivity }: { onActivity: () => void }) {
               <ul className="events">
                 {turn.events.map((ev) => (
                   <li key={ev.auditId}>
-                    <code>{ev.tool}</code>
-                    <StatusBadge value={ev.status} />
+                    <button className="event-btn" onClick={() => openTrace(ev.auditId)} title="View the call trace">
+                      <code>{ev.tool}</code>
+                      <StatusBadge value={ev.status} />
+                    </button>
                   </li>
                 ))}
               </ul>

@@ -3,6 +3,7 @@ import { AgGridReact } from "ag-grid-react";
 import type { ColDef } from "ag-grid-community";
 import { money, type Spend } from "../api";
 import { gridTheme } from "../grid";
+import { xray } from "../xray";
 
 export function SpendView({ spend }: { spend: Spend | null }) {
   const columns = useMemo<ColDef<Spend["byTool"][number]>[]>(
@@ -35,7 +36,7 @@ export function SpendView({ spend }: { spend: Spend | null }) {
         })}
         {spend && spend.caps.length === 0 && <p className="muted">No daily caps set. Add one on the Policies tab.</p>}
       </div>
-      <div className="grid-wrap">
+      <div className="grid-wrap" {...xray("aggrid", "AG Grid · today's spend vs. policy caps")}>
         <AgGridReact theme={gridTheme} rowData={spend?.byTool ?? []} columnDefs={columns} overlayNoRowsTemplate="No activity today." />
       </div>
     </div>

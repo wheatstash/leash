@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { api, money, type PolicyRule } from "../api";
 import { StatusBadge } from "../StatusBadge";
+import { xray } from "../xray";
 
 export function conditions(p: PolicyRule): string {
   const parts: string[] = [];
@@ -39,7 +40,7 @@ export function PolicyComposer({ onSaved, inputId = "policy-text" }: { onSaved: 
   }
 
   return (
-    <div className="composer">
+    <div className="composer" {...xray("claude", "Claude structured outputs · plain English → typed rule (zod schema)")}>
       <form onSubmit={onTranslate} className="composer-form">
         <label className="field">
           <span className="field-label">Describe a rule in plain English</span>

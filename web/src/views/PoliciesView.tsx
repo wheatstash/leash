@@ -5,6 +5,7 @@ import { api, type Policy } from "../api";
 import { gridTheme } from "../grid";
 import { StatusBadge } from "../StatusBadge";
 import { conditions, PolicyComposer } from "./PolicyComposer";
+import { xray } from "../xray";
 
 export function PoliciesView({ rows, onChange }: { rows: Policy[]; onChange: () => void }) {
   const columns = useMemo<ColDef<Policy>[]>(
@@ -38,7 +39,7 @@ export function PoliciesView({ rows, onChange }: { rows: Policy[]; onChange: () 
   return (
     <div className="stack">
       <PolicyComposer onSaved={onChange} />
-      <div className="grid-wrap">
+      <div className="grid-wrap" {...xray("aggrid", "AG Grid · rules checked on every call; most restrictive wins")}>
         <AgGridReact<Policy> theme={gridTheme} rowData={rows} columnDefs={columns} getRowId={(p) => p.data.id} tooltipShowDelay={300} />
       </div>
     </div>

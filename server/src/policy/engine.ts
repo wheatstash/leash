@@ -49,10 +49,12 @@ export function evaluate(tool: string, args: ToolArgs): Decision {
   const amount = extractAmount(args);
   let action: PolicyAction = "allow";
   const hits: { policy: Policy; why: string }[] = [];
+  const checks: Decision["checks"] = [];
 
   for (const policy of policies) {
-    if (!policy.enabled || !toolMatches(policy.tools, tool)) continue;
-    const why = triggers(policy, amount);
+    const applies = policy.enabled && toolMatches(policy.tools, tool);
+    const why = applies ? triggers(policy, amount) : null;
+    checks.push({ policyId: policy.id, name: policy.name, action: policy.action, enabled: policy.enabled, applies, triggered: why !== null, why });
     if (why === null) continue;
     hits.push({ policy, why });
     if (SEVERITY[policy.action] > SEVERITY[action]) action = policy.action;
@@ -63,6 +65,7 @@ export function evaluate(tool: string, args: ToolArgs): Decision {
     action,
     amount,
     policyIds: deciding.map((h) => h.policy.id),
+    checks,
     reason: deciding.length
       ? deciding.map((h) => `${h.policy.name}: ${h.why}`).join("; ")
       : "No policy restricts this call",

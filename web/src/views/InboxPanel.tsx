@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { api, type Email } from "../api";
 import { StatusBadge } from "../StatusBadge";
+import { useOpenTrace } from "../traceContext";
 
 export function InboxPanel({ emails, onActivity }: { emails: Email[]; onActivity: () => void }) {
+  const openTrace = useOpenTrace();
   const [openId, setOpenId] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
 
@@ -63,8 +65,10 @@ export function InboxPanel({ emails, onActivity }: { emails: Email[]; onActivity
                     <ul className="events">
                       {e.events.map((ev) => (
                         <li key={ev.auditId}>
-                          <code>{ev.tool}</code>
-                          <StatusBadge value={ev.status} />
+                          <button className="event-btn" onClick={() => openTrace(ev.auditId)} title="View the call trace">
+                            <code>{ev.tool}</code>
+                            <StatusBadge value={ev.status} />
+                          </button>
                         </li>
                       ))}
                     </ul>

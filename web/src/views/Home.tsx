@@ -1,10 +1,12 @@
 import { useState, type ReactNode } from "react";
 import { money, time, type Approval, type AuditEntry, type AuditStatus, type Email, type Spend, type Status } from "../api";
-import { Bot2D, type BotEvent, type Reaction } from "../Bot2D";
+import { Mascot, type BotEvent, type Reaction } from "../Mascot";
 import { Icon } from "../Icons";
 import type { Page } from "../Sidebar";
 import { StatusBadge } from "../StatusBadge";
 import { PolicyComposer } from "./PolicyComposer";
+import { useOpenTrace } from "../traceContext";
+import { xray } from "../xray";
 
 interface Props {
   status: Status | null;
@@ -55,6 +57,7 @@ function isToday(iso: string) {
 export function Home(props: Props) {
   const { status, guardrails, approvals, audit, spend, inbox, onNavigate } = props;
   const [bannerOpen, setBannerOpen] = useState(true);
+  const openTrace = useOpenTrace();
 
   const cap = spend?.caps[0];
   const allowance = cap ? Math.max(0, cap.limit - cap.used) : null;
@@ -72,7 +75,7 @@ export function Home(props: Props) {
     <div className="home">
       <section className="hero">
         <div className="hero-text">
-          <p className="hero-amount">
+          <p className="hero-amount" {...xray("leash", "Policy engine · daily refund cap minus today's spend")}>
             {allowance === null ? "—" : money(allowance)}
             <span className="hero-currency">USD</span>
           </p>
@@ -83,7 +86,9 @@ export function Home(props: Props) {
             Manage limits <Icon.ChevronDown size={16} />
           </button>
         </div>
-        <Bot2D event={botEvent} caption={caption} />
+        <div {...xray("leash", "Leash gateway · the dog reacts to the latest firewall decision")}>
+          <Mascot event={botEvent} caption={caption} />
+        </div>
       </section>
 
       <section className="task-cards">
@@ -134,7 +139,7 @@ export function Home(props: Props) {
           </div>
           <button className="link" onClick={() => onNavigate("spend")}>View more</button>
         </div>
-        <div className="kpis">
+        <div className="kpis" {...xray("leash", "Gateway audit log · every PayPal call is counted")}>
           <Kpi label="Tool calls" value={String(today.length)} note={`${today.filter((e) => e.source === "agent").length} by the agent`} />
           <Kpi label="Money moved" value={money(moved)} note={plural(today.filter((e) => MOVED.includes(e.status)).length, "call") + " executed"} />
           <Kpi label="Held for approval" value={String(pending.length)} note={pending.length ? money(pending.reduce((s, a) => s + (a.amount ?? 0), 0)) : "–"} />
@@ -169,9 +174,9 @@ export function Home(props: Props) {
             </p>
           </div>
         ) : (
-          <ul className="activity">
+          <ul className="activity" {...xray("paypal", "Agent Toolkit calls through Leash · click a row for its trace")}>
             {audit.slice(0, 6).map((e) => (
-              <li key={e.id} className="activity-row">
+              <li key={e.id} className="activity-row" onClick={() => openTrace(e.id)} title="View the call trace">
                 <span className={`activity-dot dot-${e.status}`} />
                 <div className="activity-main">
                   <p className="activity-title">{humanize(e.tool)}</p>

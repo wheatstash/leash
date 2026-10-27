@@ -27,6 +27,72 @@ export interface Email {
   error?: string;
 }
 
+export interface HttpCall {
+  method: string;
+  url: string;
+  status: number;
+  ms: number;
+  debugId: string | null;
+  requestBody?: unknown;
+  responseBody?: unknown;
+  error?: string;
+}
+
+export interface Trace {
+  claude?: {
+    model: string;
+    requestId: string | null;
+    toolUseId: string;
+    step: number;
+    latencyMs: number;
+    stopReason: string | null;
+    usage: { input: number; output: number; cacheRead: number; cacheWrite: number };
+  };
+  policy: {
+    guardrails: boolean;
+    ms: number;
+    checks: { policyId: string; name: string; action: Action; enabled: boolean; applies: boolean; triggered: boolean; why: string | null }[];
+  };
+  toolkit: { package: string; version: string | null; tool: string; description: string };
+  paypal?: { mock: boolean; ms: number; calls: HttpCall[] };
+}
+
+export interface Stack {
+  paypal: {
+    mode: "mock" | "sandbox";
+    apiBase: string | null;
+    tokenObtainedAt: string | null;
+    tokenExpiresAt: string | null;
+    calls: number;
+    lastStatus: number | null;
+    lastMs: number | null;
+  };
+  toolkit: { version: string | null; tools: number };
+  claude: {
+    model: string;
+    effort: string;
+    sdkVersion: string | null;
+    calls: number;
+    lastModel: string | null;
+    lastMs: number | null;
+    lastAt: string | null;
+    tokens: { input: number; output: number; cacheRead: number };
+  };
+  ui: { agGrid: string | null; react: string | null };
+  host: {
+    onRender: boolean;
+    service: string | null;
+    url: string | null;
+    instance: string | null;
+    branch: string | null;
+    commit: string | null;
+    repo: string;
+    node: string;
+    express: string | null;
+    uptimeSec: number;
+  };
+}
+
 export interface AuditEntry {
   id: string;
   timestamp: string;
@@ -39,6 +105,7 @@ export interface AuditEntry {
   result?: unknown;
   error?: string;
   source: "agent" | "console";
+  trace?: Trace;
 }
 
 export interface Approval {
@@ -94,6 +161,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const api = {
   status: () => request<Status>("/status"),
+  stack: () => request<Stack>("/stack"),
   audit: () => request<AuditEntry[]>("/audit"),
   approvals: () => request<Approval[]>("/approvals"),
   spend: () => request<Spend>("/spend"),
